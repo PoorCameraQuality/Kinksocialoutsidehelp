@@ -103,7 +103,7 @@ Flow in short:
 1. Operator dispatches Deploy.
 2. Verify job runs CI.
 3. Protected production environment approval.
-4. Tarball respects `.deployignore` and syncs via the unprivileged deploy user.
+4. Release tarball syncs via the unprivileged deploy user (private ops tooling).
 5. Host scripts run migrate, build, up, and health checks.
 6. Recent releases and code snapshots are retained for rollback.
 
