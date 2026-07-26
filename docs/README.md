@@ -1,4 +1,4 @@
-# Documentation
+﻿# Documentation
 
 Engineer-facing docs for Kink.social.
 
@@ -26,7 +26,6 @@ Start with the root [README.md](../README.md), then:
 | [VPS_DEPLOYMENT_VERIFICATION.md](./VPS_DEPLOYMENT_VERIFICATION.md) | Deploy verification notes |
 | [ENGINEERING_REVIEW_CHECKLIST.md](./ENGINEERING_REVIEW_CHECKLIST.md) | Reviewer checklist |
 | [FEATURE_REGISTRY.md](./FEATURE_REGISTRY.md) | Routes and feature map |
-| [design-craft/](./design-craft/) | Human-readable UI design craft guides |
 
 ## Also useful
 
@@ -38,3 +37,5 @@ Start with the root [README.md](../README.md), then:
 | [../SECURITY.md](../SECURITY.md) | Security reporting |
 
 If a historical doc from the private archive disagrees with code, trust the code and the canonical pages above.
+
+
