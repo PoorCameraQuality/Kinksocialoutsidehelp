@@ -23,16 +23,11 @@ packages/web      Canonical UI
 packages/api      API, schema, worker
 packages/shared   Shared contracts
 docker/           Dockerfiles and nginx SPA config
-scripts/          Local, migrate, and VPS helpers
-e2e/              Playwright tests
+scripts/          Minimal local DB helpers (prepare / migrate)
 docs/             Engineering documentation
 ```
 
-Historical or reference-only trees (not the active app):
-
-- Root `src/` - pre-Vite copies
-- `legacy/` - old Next.js config
-- `vendor/` - ECKE / Dancecard export reference
+This GitHub tree is a **review slice** of the product. Playwright e2e, private ops scripts, and historical trees are not included. See [docs/REMOVED_FILES_SUMMARY.md](docs/REMOVED_FILES_SUMMARY.md).
 
 ## Requirements
 
@@ -67,8 +62,7 @@ npm run dev           # Vite :5173 + API :3001
 npm run typecheck
 npm run lint
 npm run build
-npm run test          # API unit tests
-npm run test:e2e:smoke
+npm run test          # API unit tests (includes auth / privacy helpers)
 ```
 
 Start the worker separately when you need queues. See [Local development](docs/LOCAL_DEVELOPMENT.md) (`npm run start:worker -w @c2k/api` after an API build).
@@ -80,7 +74,6 @@ Supported path today: **VPS + Docker Compose + Caddy**.
 1. Copy `.env.production.example` to `.env.production` on the host (never commit secrets).
 2. Run `npm run db:migrate-prod` against production with Node 20.
 3. Bring up the compose stack (`docker-compose.prod.yml`, plus the VPS overlay when used).
-4. Prefer changed-file patch scripts under `scripts/vps/` over full tarball deploys.
 
 Do not run seed or database clear commands against production.
 
@@ -118,5 +111,4 @@ Public controlled alpha. Organizer Event Systems, orgs, groups, media, moderatio
 - Demo and seed content exist for local and alpha testing.
 - Some route modules still use thin local auth wrappers. New mutating routes should use `requireAuthenticatedDbUser`.
 - Relationship words (`friends`, `connections`, `followers`) are not always the same graph edge. See the glossary.
-- Kubernetes manifests may exist in the repo. They are not the supported deploy path documented here.
 - See [Known limitations](docs/KNOWN_LIMITATIONS.md) for more.

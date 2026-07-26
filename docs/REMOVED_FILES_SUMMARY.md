@@ -1,32 +1,28 @@
-# Removed files summary
+# What this snapshot leaves out
 
-This tree is a cleaned engineer-review snapshot of Kink.social. The private development repository remains intact. Nothing was deleted from the source tree for this export.
+This repository is a **review and contribution slice**, not a dump of the private development workspace.
+
+## Included (essential)
+
+| Area | Why |
+|------|-----|
+| `packages/web`, `packages/api`, `packages/shared` | The product |
+| `docker-compose.dev.yml` + env examples | Run locally |
+| `docker-compose.prod*.yml`, `Caddyfile`, `docker/` | Understand production shape |
+| Minimal `scripts/` (`db:prepare`, migrate, wait-for-postgres) | Get a database up |
+| Unit tests inside packages | Review behavior with code |
+| Core engineer docs + ADRs + architecture series | Context for auth, privacy, media, events |
+| `.github/workflows/ci.yml` | How checks run |
 
 ## Intentionally omitted
 
-| Category | Examples | Reason |
-|----------|----------|--------|
-| Agent / editor tooling | `.cursor/`, `.agents/`, `AGENTS.md`, `skills-lock.json` | Not product or deploy surface |
-| Legacy app trees | root `src/`, `legacy/`, `vendor/` | Active app is `packages/*` |
-| Dual package manager | `pnpm-lock.yaml`, `pnpm-workspace.yaml` | CI and Docker use npm |
-| Kubernetes manifests | `k8s/` | VPS Docker Compose is the documented deploy path |
-| Session deploy scripts | `scripts/_*.mjs`, `scripts/vps/_*.mjs` | One-off VPS/debug tools with SSH password usage |
-| Historical docs | handoffs, audits, launch plans, UI sprint packets | Private archive material |
-| Deprecated root CSS tooling | root `tailwind.config.js`, `postcss.config.js`, `next-env.d.ts` | Vite app configs live under `packages/web` |
-| Secrets | `.env.local`, real `.env` / `.env.production` | Never ship workstation secrets |
-| Generated artifacts | `node_modules/`, `dist/`, logs, tarballs, Playwright reports, audit outputs | Rebuild locally |
-| Planning scratch | `*.plan.md`, `tmp-*`, visual-audit route dumps | Not required to build or deploy |
+| Area | Why |
+|------|-----|
+| Playwright `e2e/` | Large UI automation suite; not required to review architecture or auth |
+| Audit / verify / smoke / VPS patch scripts | Private ops and launch tooling |
+| Optional Compose overlays (media, search, observability, staging) | Not the default path |
+| Deploy workflow and SSH session tools | Private production operations |
+| Agent / Cursor tooling, historical handoffs, audits | Noise for reviewers |
+| Legacy trees (`src/`, `legacy/`, `vendor/`, `k8s/`) | Not the active app |
 
-## Kept for review
-
-- Active monorepo packages (`api`, `web`, `shared`)
-- Docker Compose (dev + prod + optional overlays) and Dockerfiles
-- Caddy configs
-- npm lockfile and GitHub Actions (CI + deploy)
-- Playwright e2e suite
-- npm-facing scripts and non-underscore `scripts/vps` helpers
-- Canonical engineer docs, ADRs, and architecture series
-
-## How to restore omitted material
-
-Use the private development repository. See `docs/REPOSITORY_EXTRACTION_INVENTORY.md` for the full keep/exclude table.
+If you need something omitted here, ask the maintainers. Do not assume absence means the product lacks that coverage privately.

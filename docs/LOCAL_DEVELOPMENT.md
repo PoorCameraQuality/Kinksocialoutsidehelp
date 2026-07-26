@@ -86,8 +86,6 @@ npm run start:worker -w @c2k/api
 npm run typecheck
 npm run lint
 npm run test
-npm run test:e2e:install
-npm run test:e2e:smoke
 ```
 
 See [TESTING.md](./TESTING.md).

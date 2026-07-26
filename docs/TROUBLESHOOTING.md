@@ -10,7 +10,6 @@
 | No mail in local tests | Mailpit down or wrong SMTP | Start compose, open Mailpit UI, check mail env |
 | Upload errors | MinIO/S3 env missing | Check S3 settings in `.env.development` |
 | Unit tests odd on Node 24 | Unsupported Node for current toolchain | Use Node 20 |
-| Playwright reuses a bad server | Stale process on :5173 | Stop it, or set `CI=true` for a clean webServer start |
 
 ## Production
 

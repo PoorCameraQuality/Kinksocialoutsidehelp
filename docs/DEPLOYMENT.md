@@ -2,16 +2,14 @@
 
 Supported production path: **VPS + Docker Compose + Caddy**.
 
-Kubernetes manifests may exist in the repository. They are not the documented default path for current alpha hosting.
-
-Related files:
+Related files in this snapshot:
 
 - `docker-compose.prod.yml`
 - `docker-compose.prod.vps.yml`
 - `.env.production.example`
 - `Caddyfile`
-- `scripts/vps/`
-- `.github/workflows/deploy.yml`
+- `docker/api.Dockerfile`, `docker/web.Dockerfile`
+- `npm run db:migrate-prod`
 
 ## Required services
 
@@ -25,12 +23,6 @@ Related files:
 | Caddy | TLS and reverse proxy |
 | External S3-compatible storage | Uploads (production compose does not include MinIO) |
 | SMTP or Resend | Transactional mail |
-
-Optional overlays (only when you intentionally enable them):
-
-- `docker-compose.media.yml`
-- `docker-compose.search.yml`
-- `docker-compose.observability.yml`
 
 ## Environment
 
@@ -117,8 +109,6 @@ Flow in short:
 
 Never runs `db:seed` or `db:prepare`.
 
-Prefer changed-file patch scripts under `scripts/vps/` when you only need to update a few files.
-
 ## Health checks
 
 | Endpoint | Expected |
@@ -133,15 +123,14 @@ Readiness does not prove Redis or the worker are healthy. Check worker logs sepa
 
 Application rollback restores a previous code snapshot and rebuilds. Schema rollback is separate and may need a forward fix migration. Do not assume `db:push` can undo production data changes.
 
-Use the documented `c2k-rollback` host helper or the Deploy workflow rollback option when available.
+Use the host rollback helper when available. Schema rollback is not automatic.
 
 ## What must never ship in a deploy package
 
 - `.env.production` and real secrets
 - Database dumps
 - `node_modules`
-- Logs, tarballs, Playwright output
-- Large audit screenshot trees under `docs/audits`
+- Logs and tarballs
 
 ## After deploy smoke
 

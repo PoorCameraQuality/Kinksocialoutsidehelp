@@ -2,10 +2,10 @@
 
 ## Day-to-day VPS
 
-- Prefer changed-file updates under `scripts/vps/` when possible.
 - Rebuild only the services you changed (web, api, worker).
 - Keep `.env.production` only on the host.
 - Watch API and worker logs after deploys.
+- Prefer same-origin Caddy so session cookies stay simple.
 
 ## Health
 
@@ -19,20 +19,14 @@ Worker health is not fully covered by API readiness. Confirm the worker containe
 
 ## Mail
 
-Local: Mailpit.
+Local: Mailpit (`docker-compose.dev.yml`, UI on port 8025).
 
-Production: SMTP or Resend. Apply the same mail env on API and worker. Operator detail remains in `docs/ops/mail-production.md`.
-
-## Optional observability
-
-- Error tracking via `ERROR_TRACKING_*` / Sentry-compatible DSN (off by default)
-- Uptime checks: `docs/ops/uptime-kuma-checks.md`
-- Optional GlitchTip notes: `docs/ops/glitchtip-self-host.md`
+Production: SMTP or Resend. Apply the same mail env on API and worker.
 
 ## Backups
 
 Expect Postgres backups and object-storage durability to be handled by your host or managed providers. Do not rely on git or deploy tarballs as backups.
 
-## Cutover notes
+## More detail
 
-Historical VPS cutover notes may exist in `SERVER_CUTOVER_LOG.md` in the private archive. Treat that file as a journal, not as the primary runbook. Current procedure lives in [DEPLOYMENT.md](./DEPLOYMENT.md).
+See [DEPLOYMENT.md](./DEPLOYMENT.md) and [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md).

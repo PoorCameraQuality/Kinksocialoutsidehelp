@@ -35,9 +35,6 @@ jobs:
       - name: API unit tests
         run: npm run test -w @c2k/api
 
-      - name: Alpha hardening media gate (unit)
-        run: npm run verify:alpha-hardening-media
-
   check-db:
     runs-on: ubuntu-latest
     services:

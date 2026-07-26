@@ -16,9 +16,7 @@ Work in:
 - `packages/web`
 - `packages/api`
 - `packages/shared`
-- `scripts/`, `e2e/`, `docker/`, and `.github/workflows` when needed
-
-Do not treat root `src/`, `legacy/`, or `vendor/` as the live application.
+- `docker/` and the root Compose files when changing how the stack runs
 
 ## Development workflow
 
@@ -40,7 +38,7 @@ npm run lint
 npm run test
 ```
 
-Also run the Playwright or domain scripts that cover the area you touched. See [docs/TESTING.md](docs/TESTING.md).
+See [docs/TESTING.md](docs/TESTING.md).
 
 ## Coding rules that matter here
 
