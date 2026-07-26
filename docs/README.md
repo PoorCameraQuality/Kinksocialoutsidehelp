@@ -26,6 +26,7 @@ Start with the root [README.md](../README.md), then:
 | [VPS_DEPLOYMENT_VERIFICATION.md](./VPS_DEPLOYMENT_VERIFICATION.md) | Deploy verification notes |
 | [ENGINEERING_REVIEW_CHECKLIST.md](./ENGINEERING_REVIEW_CHECKLIST.md) | Reviewer checklist |
 | [FEATURE_REGISTRY.md](./FEATURE_REGISTRY.md) | Routes and feature map |
+| [design-craft/](./design-craft/) | Human-readable UI design craft guides |
 
 ## Also useful
 
