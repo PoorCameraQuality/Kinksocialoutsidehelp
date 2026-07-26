@@ -1,0 +1,90 @@
+# PR / push CI: typecheck + API unit tests (no Docker Postgres required).
+# DB-backed notifications test runs in `check-db` with a Postgres service.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  # Reused as the required verification stage of the Deploy workflow.
+  workflow_call:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
+
+      - name: No legacy c2k Tailwind color classes
+        run: npm run check:dc-classes -w web
+
+      - name: API unit tests
+        run: npm run test -w @c2k/api
+
+      - name: Alpha hardening media gate (unit)
+        run: npm run verify:alpha-hardening-media
+
+  check-db:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: c2k
+          POSTGRES_PASSWORD: c2k_dev
+          POSTGRES_DB: c2k_ci
+        ports:
+          - 6432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      # Wave 7 / moderation / feed smokes enqueue BullMQ jobs; without Redis,
+      # ioredis retries ECONNREFUSED until the job is canceled.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://c2k:c2k_dev@127.0.0.1:6432/c2k_ci?sslmode=disable
+      REDIS_URL: redis://127.0.0.1:6379
+      USE_DATABASE: 'true'
+      CI_NOTIFICATIONS_DB: 'true'
+      CI_API_INTEGRATION_DB: 'true'
+      AUTH_SECRET: ci-github-actions-auth-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Push schema
+        run: npm run db:push -w @c2k/api
+
+      - name: DB integration smokes (notifications + Wave 7)
+        run: npm run test:db -w @c2k/api

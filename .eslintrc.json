@@ -1,0 +1,16 @@
+{
+  "extends": "next/core-web-vitals",
+  "overrides": [
+    {
+      "files": [
+        "src/components/PhotoUpload.tsx",
+        "src/components/group/GroupPhotosSection.tsx",
+        "src/app/profile/ProfilePageClient.tsx",
+        "src/app/tags/[tag]/page.tsx"
+      ],
+      "rules": {
+        "@next/next/no-img-element": "off"
+      }
+    }
+  ]
+}

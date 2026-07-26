@@ -1,0 +1,100 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build
+.next
+out
+build
+dist
+**/storybook-static/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Debug / logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+**/*.log
+test-out.txt
+tmp-*.txt
+*-out.txt
+push-out.txt
+seed-out.txt
+wait-out.txt
+tsc-api*.txt
+vite-build.txt
+_api-logs.txt
+_migrate-log.txt
+build-web.log
+
+# Env (templates tracked; secrets never)
+.env
+.env.local
+.env.production
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.development
+!.env.example
+!.env.production.example
+
+# IDE
+.idea
+.vscode
+.cursor/c2k-loop-active.json
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Copied from local machine during db:seed (see C2K_SEED_IMAGE_DIR / Pictures/seed)
+/packages/web/public/seed/paf/
+
+# Playwright / coverage
+/test-results/
+/playwright-report/
+/playwright/.cache/
+coverage/
+**/coverage/
+
+# Visual audit (generated locally / on VPS)
+/visual-audit-output/
+audit-output/
+
+# Generated docs artifacts (regenerate locally)
+docs/handoff/C2K_PROJECT_CONTEXT_*.txt
+!docs/handoff/C2K_PROJECT_CONTEXT_LATEST.txt
+docs/handoff/docs-index.txt
+docs/handoff/verify-*.log
+docs/audits/
+docs/audits/**/*.log
+docs/audits/trust-and-safety/verify-trust-safety.log
+docs/audits/ui/screenshots/*.zip
+
+# Local deploy bundles (too large for GitHub; regenerate on machine)
+.deploy-c2k-full.tgz
+.deploy-c2k.tgz
+_deploy-*.tar.gz
+_deploy-*.tgz
+_deploy-*-log.txt
+*.tgz
+*.tar.gz
+backups/
+**/backups/
+
+# VPS mailserver runtime data (never commit)
+docker/mailserver/data/
+docker/mailserver/state/
+docker/mailserver/logs/
+docker/mailserver/config/
+k8s/base/secret.yaml
+
+# Local audit credentials (never commit)
+.kink-social-audit.local
+.qa-audit-assets/
+deploy-log.txt

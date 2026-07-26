@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /sitemap.xml
+Allow: /$
+Allow: /about$
+Allow: /terms$
+Allow: /privacy$
+Allow: /guidelines$
+Allow: /adult-content-consent$
+Allow: /minor-safety$
+Allow: /ncii$
+Allow: /dmca$
+Allow: /law-enforcement$
+Allow: /security$
+Allow: /policies
+Allow: /vendor-organizer-terms$
+Disallow: /
+
+Sitemap: https://kink.social/sitemap.xml

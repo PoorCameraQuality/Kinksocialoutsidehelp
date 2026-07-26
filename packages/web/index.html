@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <script>
+      (function () {
+        var ua = navigator.userAgent || '';
+        var html = document.documentElement;
+        html.classList.add('browser-env-ready');
+        if (/iPhone|iPad|iPod/i.test(ua)) html.classList.add('browser-ios');
+        if (/Android/i.test(ua)) html.classList.add('browser-android');
+        if (/SamsungBrowser/i.test(ua)) html.classList.add('browser-samsung');
+        if (/FBAN|FBAV|Instagram|Messenger|Twitter|LinkedInApp|TikTok|Line\//i.test(ua)) html.classList.add('browser-in-app');
+      })();
+    </script>
+    <meta name="theme-color" content="#0f0f0f" />
+    <meta name="description" content="Find kink and BDSM events, local groups, educators, presenters, vendors, organizations, and community tools. Kink Social is free to join and is not a dating site." />
+    <meta name="keywords" content="kink social media, BDSM events, fetish community, kink groups, munch finder, kink education, presenters, vendors, organizer tools, not a dating site" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta property="og:site_name" content="Kink Social" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kink.social/" />
+    <meta property="og:title" content="Find your people. Find your place. | Kink Social" />
+    <meta property="og:description" content="Discover kink events, communities, education, presenters, vendors, and organizer tools on a platform built for connection and belonging." />
+    <meta property="og:image" content="https://kink.social/og-default.png" />
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="537" />
+    <meta property="og:image:alt" content="Kink Social — kink social media for the BDSM and fetish community. Public beta." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://kink.social/og-default.png" />
+    <meta name="twitter:image:alt" content="Kink Social — kink social media for the BDSM and fetish community. Public beta." />
+    <meta name="twitter:title" content="Find your people. Find your place. | Kink Social" />
+    <meta name="twitter:description" content="Find kink and BDSM events, local groups, educators, presenters, vendors, and community tools. Free to join — not a dating site." />
+    <link rel="canonical" href="https://kink.social/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/og-default.png" />
+    <title>Kink Social | Kink Events, Groups, Education and Community</title>
+  </head>
+  <body>
+    <!-- Fallback background if JS/CSS fail; React replaces contents. -->
+    <div id="root" style="min-height: 100vh; background: #0f0f0f"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

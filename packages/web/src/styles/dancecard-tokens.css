@@ -1,0 +1,58 @@
+/**
+ * Dancecard / Event Systems organizer tokens.
+ * Presets also apply via inline style from DancecardAppearanceProvider; these are fallbacks.
+ */
+
+.dc-gold-chrome[data-dc-theme='event'] {
+  /* Midnight Velvet - sitewide default before JS applies appearance presets */
+  --dc-surface: #090a0f;
+  --dc-surface-muted: #11131a;
+  --dc-surface-card: #171923;
+  --dc-elevated: rgba(23, 25, 35, 0.94);
+  --dc-elevated-solid: #1f2330;
+  --dc-elevated-muted: rgba(255, 255, 255, 0.08);
+  --dc-elevated-hover: #262b3a;
+  --dc-input: #12151e;
+  --dc-text: #f7f2ea;
+  --dc-text-muted: #d6cdc1;
+  --dc-text-subtle: #aa9fb0;
+  --dc-muted: #968a9a;
+  --dc-accent: #e6638e;
+  --dc-accent-hover: #f07a9f;
+  --dc-accent-muted: #2a1722;
+  --dc-accent-border: #8a3650;
+  --dc-accent-foreground: #090a0f;
+  --dc-border-subtle: #303644;
+  --dc-border-strong: #4a5367;
+  --dc-danger: #f87171;
+  --dc-danger-muted: rgba(248, 113, 113, 0.12);
+  --dc-danger-border: rgba(248, 113, 113, 0.35);
+  --dc-success: #6ee7b7;
+  --dc-success-muted: rgba(110, 231, 183, 0.12);
+  --dc-warning: #fbbf24;
+  --dc-warning-muted: rgba(251, 191, 36, 0.12);
+  --dc-slot-published: #e6638e;
+  --dc-slot-accent-mix: 28%;
+  --dc-shadow-soft:
+    0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 10px 32px rgba(0, 0, 0, 0.34);
+  --dc-shadow-panel:
+    0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.22),
+    0 20px 48px rgba(0, 0, 0, 0.44);
+  --dc-glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  color: var(--dc-text);
+  background-color: var(--dc-surface);
+}
+
+.dc-gold-chrome[data-dc-theme='event'] .dc-session-title {
+  color: var(--dc-text);
+}
+
+/* Embedded organizer / dancecard island - not sitewide member chrome */
+.dc-gold-chrome.dc-gold-chrome--lifted[data-dc-theme='event'] {
+  border-radius: 1rem;
+  box-shadow: var(--dc-shadow-panel);
+  border: 1px solid var(--dc-border-subtle);
+}

@@ -1,0 +1,31 @@
+export const LOOKING_FOR_OPTIONS: readonly string[] = [
+  'Friends',
+  'Play partners',
+  'Relationship',
+  'Long-term relationship',
+  'Casual dating',
+  'Poly / ENM connections',
+  'Mentorship',
+  'Scene buddies',
+  'Event companions',
+  'Collaborators',
+  'Rope partners',
+  'Education / classes',
+  'Community',
+  'Chat / pen pals',
+] as const
+
+export const NOT_LOOKING_FOR_OPTIONS: readonly string[] = [
+  'One-night stands',
+  'Cheating / affairs',
+  'Unicorn hunting',
+  'Unvetted play',
+  'Online-only dynamics',
+  'Financial domination',
+  'Politics debates',
+  'Vanilla dating',
+  'Long-distance only',
+  'Under-18 contact',
+  'Non-consensual themes',
+  'Drugs in play',
+] as const

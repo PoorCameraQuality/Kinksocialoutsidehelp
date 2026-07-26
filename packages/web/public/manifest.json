@@ -1,0 +1,25 @@
+{
+  "name": "Kink Social",
+  "short_name": "Kink Social",
+  "description": "Consent-first kink social media for the BDSM and fetish lifestyle — events, groups, profiles, and community. Public beta.",
+  "start_url": "/home",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/og-default.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/og-default.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "manifestVersion": 1,
+  "hero": {
+    "sourceMediaAssetId": "22222222-2222-4222-8222-222222222222",
+    "role": "hero",
+    "ordinal": 0,
+    "publicUrl": "https://cdn.example.com/ecke-fixture-hero.jpg",
+    "width": 1200,
+    "height": 630,
+    "sha256Hash": null,
+    "altText": "Fixture hero"
+  },
+  "gallery": [
+    {
+      "sourceMediaAssetId": "33333333-3333-4333-8333-333333333333",
+      "role": "gallery",
+      "ordinal": 0,
+      "publicUrl": "https://cdn.example.com/ecke-fixture-gallery-0.jpg",
+      "width": 800,
+      "height": 600,
+      "sha256Hash": null,
+      "altText": null
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+/**
+ * Desktop visual polish (Sprint 3) — lg+ gated unless noted.
+ * Cross-breakpoint primitives: shared-surfaces.css. Mobile-only: mobile-polish.css.
+ */
+
+/* Surface lift applies on desktop only; mobile cards keep baseline shadow from tokens. */
+@media (min-width: 1024px) {
+  .dc-surface-lift {
+    box-shadow: var(--dc-shadow-soft), var(--dc-glass-inset);
+  }
+
+  .dc-rail-card {
+    position: relative;
+    background-image: linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--dc-elevated-solid) 92%, var(--dc-accent) 8%) 0%,
+      var(--dc-elevated-solid) 55%
+    );
+    box-shadow: var(--dc-shadow-soft), var(--dc-glass-inset);
+  }
+
+  .dc-rail-card--emphasize {
+    border-color: color-mix(in srgb, var(--dc-accent) 22%, var(--dc-border));
+    background-image: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--dc-accent-muted) 35%, var(--dc-elevated-solid)) 0%,
+      var(--dc-elevated-solid) 70%
+    );
+  }
+
+  .dc-rail-card__title {
+    letter-spacing: 0.01em;
+  }
+
+  .dc-rail-nav-shell {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--dc-elevated-solid) 94%, var(--dc-accent) 6%) 0%,
+      var(--dc-elevated-solid) 100%
+    );
+    box-shadow: var(--dc-shadow-soft), var(--dc-glass-inset);
+  }
+
+  .dc-rail-aside {
+    padding-top: 0.125rem;
+  }
+
+  .dc-header-chrome {
+    border-bottom-color: color-mix(in srgb, var(--dc-border-subtle) 88%, var(--dc-accent) 12%);
+    background: color-mix(in srgb, var(--dc-elevated-solid) 78%, transparent);
+    box-shadow: var(--dc-shadow-soft), var(--dc-glass-inset);
+    backdrop-filter: blur(14px);
+  }
+
+  .dc-header-subnav {
+    border-top-color: color-mix(in srgb, var(--dc-border-subtle) 82%, var(--dc-accent) 8%);
+    background: color-mix(in srgb, var(--dc-elevated-solid) 42%, transparent);
+  }
+
+  .dc-header-subnav .dc-browse-nav-link {
+    border-radius: 0.5rem 0.5rem 0 0;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .dc-header-subnav .dc-browse-nav-link:hover {
+    color: var(--dc-text);
+    background: color-mix(in srgb, var(--dc-elevated-muted) 65%, transparent);
+  }
+
+  .dc-header-subnav .dc-browse-nav-link--active {
+    color: var(--dc-accent);
+    background: color-mix(in srgb, var(--dc-accent-muted) 55%, transparent);
+    border-bottom-color: var(--dc-accent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--dc-accent) 18%, transparent);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .dc-card-polish:hover {
+      border-color: var(--dc-border-card-hover, color-mix(in srgb, var(--dc-accent) 28%, var(--dc-border)));
+      box-shadow: var(--dc-shadow-hover, var(--dc-shadow-panel, 0 8px 32px rgba(0, 0, 0, 0.35))), var(--dc-glass-inset);
+    }
+  }
+
+  .dc-card-polish:focus-visible {
+    outline: none;
+    box-shadow:
+      var(--dc-shadow-soft),
+      var(--dc-glass-inset),
+      0 0 0 2px color-mix(in srgb, var(--dc-accent) 40%, transparent);
+  }
+
+  .c2k-empty-glow::before {
+    background: radial-gradient(
+      ellipse 72% 48% at 50% 0%,
+      color-mix(in srgb, var(--dc-accent) 14%, transparent),
+      transparent 72%
+    );
+  }
+
+  .c2k-empty-icon-ring {
+    border: 1px solid color-mix(in srgb, var(--dc-accent) 30%, var(--dc-border));
+    background: linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--dc-accent) 12%, var(--dc-elevated-solid)) 0%,
+      var(--dc-elevated-solid) 100%
+    );
+    box-shadow: var(--dc-glass-inset);
+  }
+}
+
+.dc-rail-aside {
+  scroll-margin-top: 6rem;
+}
+
+.dc-header-chrome {
+  border-bottom-color: color-mix(in srgb, var(--dc-border-subtle) 88%, var(--dc-accent) 12%);
+}
+
+.dc-focus-ring:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--dc-surface),
+    0 0 0 4px color-mix(in srgb, var(--dc-accent) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-header-subnav .dc-browse-nav-link {
+    transition: none;
+  }
+}

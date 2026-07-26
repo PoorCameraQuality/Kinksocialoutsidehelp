@@ -1,0 +1,48 @@
+.dc-forum-post--op {
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--dc-border, rgba(255, 255, 255, 0.12));
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem;
+}
+
+.dc-forum-post--depth-1,
+.dc-forum-post--depth-2,
+.dc-forum-post--depth-3 {
+  position: relative;
+  margin-bottom: 0.75rem;
+  padding-left: 1rem;
+}
+
+.dc-forum-post--depth-1 {
+  margin-left: 0.25rem;
+}
+
+.dc-forum-post--depth-2 {
+  margin-left: 1.25rem;
+}
+
+.dc-forum-post--depth-3 {
+  margin-left: 2.25rem;
+}
+
+.dc-forum-post--depth-1::before,
+.dc-forum-post--depth-2::before,
+.dc-forum-post--depth-3::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--dc-border-subtle, rgba(255, 255, 255, 0.14));
+}
+
+.dc-forum-post--depth-2::before {
+  opacity: 0.85;
+}
+
+.dc-forum-post--depth-3::before {
+  opacity: 0.7;
+}

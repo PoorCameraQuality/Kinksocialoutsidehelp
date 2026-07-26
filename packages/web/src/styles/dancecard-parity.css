@@ -1,0 +1,20 @@
+/**
+ * Phase 8 - align C2K convention dancecard surfaces with ECKE session typography.
+ * Full tokens live in EastCoast `dancecard-tokens.css`; subset here for native C2K panels.
+ */
+.dc-session-title {
+  font-family: var(--c2k-font-display);
+  letter-spacing: -0.02em;
+  color: var(--c2k-text-primary, #fff);
+}
+
+[data-dc-hallway='true'] .dc-session-title {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/*
+ * Wave 2B organizer convention pill/chrome classes removed: the organizer
+ * sidebar + tabs now use Tailwind dc-* tokens (see organizerNavConfig.ts and
+ * OrganizerEventSidebar.tsx). No TSX references remained.
+ */

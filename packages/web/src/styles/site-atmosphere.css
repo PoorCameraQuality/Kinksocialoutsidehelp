@@ -1,0 +1,121 @@
+/* Site-wide ambient background — tokens come from the active appearance preset. */
+
+.site-atmosphere {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--dc-surface, #0c0c0c);
+}
+
+.site-atmosphere__layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-atmosphere__base {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 50%, transparent 42%, var(--dc-atmosphere-vignette, rgba(0, 0, 0, 0.38)) 100%),
+    radial-gradient(ellipse 90% 60% at 4% -6%, var(--dc-atmosphere-glow-a, rgba(212, 175, 55, 0.16)), transparent 56%),
+    radial-gradient(ellipse 70% 52% at 96% 4%, var(--dc-atmosphere-glow-b, rgba(212, 175, 55, 0.08)), transparent 48%),
+    radial-gradient(ellipse 80% 48% at 50% 104%, var(--dc-atmosphere-glow-c, rgba(212, 175, 55, 0.06)), transparent 44%),
+    linear-gradient(
+      180deg,
+      var(--dc-atmosphere-glow-a, rgba(212, 175, 55, 0.06)) 0%,
+      transparent 16%,
+      transparent 68%,
+      var(--dc-atmosphere-vignette, rgba(0, 0, 0, 0.34)) 100%
+    ),
+    linear-gradient(
+      180deg,
+      var(--dc-atmosphere-gradient-top, #0a0a0a) 0%,
+      var(--dc-atmosphere-gradient-mid, #101010) 48%,
+      var(--dc-atmosphere-gradient-bottom, #0c0c0c) 100%
+    );
+}
+
+.site-atmosphere__orb {
+  position: fixed;
+  border-radius: 9999px;
+  filter: blur(72px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--dc-atmosphere-orb-opacity, 0.72);
+}
+
+.site-atmosphere__orb--primary {
+  width: min(38vw, 480px);
+  height: min(38vw, 480px);
+  top: 6%;
+  left: 10%;
+  background: var(--dc-atmosphere-orb-a, rgba(212, 175, 55, 0.16));
+}
+
+.site-atmosphere__orb--secondary {
+  width: min(30vw, 380px);
+  height: min(30vw, 380px);
+  top: 44%;
+  right: 6%;
+  background: var(--dc-atmosphere-orb-b, rgba(212, 175, 55, 0.1));
+}
+
+.site-atmosphere__orb--tertiary {
+  width: min(26vw, 320px);
+  height: min(26vw, 320px);
+  bottom: 4%;
+  left: 40%;
+  background: var(--dc-atmosphere-orb-c, rgba(212, 175, 55, 0.07));
+}
+
+.site-atmosphere__noise {
+  opacity: 0.028;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.site-atmosphere__content {
+  position: relative;
+  z-index: 1;
+  min-height: inherit;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .site-atmosphere__orb--primary {
+    animation: site-atmosphere-orb-a 32s ease-in-out infinite alternate;
+  }
+
+  .site-atmosphere__orb--secondary {
+    animation: site-atmosphere-orb-b 36s ease-in-out infinite alternate;
+  }
+
+  .site-atmosphere__orb--tertiary {
+    animation: site-atmosphere-orb-c 28s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes site-atmosphere-orb-a {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(2%, 3%) scale(1.04);
+  }
+}
+
+@keyframes site-atmosphere-orb-b {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-3%, -2%) scale(1.03);
+  }
+}
+
+@keyframes site-atmosphere-orb-c {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(1%, -3%) scale(1.03);
+  }
+}

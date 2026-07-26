@@ -1,0 +1,92 @@
+# Deploy tarball exclusions — used by scripts/_deploy-full-prod.mjs and scripts/vps/push-and-bootstrap.mjs
+# Prefer changed-files-only patch scripts (scripts/vps/patch-*-vps.mjs) over full tarballs when possible.
+
+# VCS and dependencies
+.git
+**/.git
+node_modules
+**/node_modules
+
+# Build outputs and caches
+dist
+**/dist
+build
+**/build
+.next
+**/.next
+.turbo
+**/.turbo
+.vite
+**/.vite
+*.tsbuildinfo
+**/*.tsbuildinfo
+packages/api/dist
+packages/web/dist
+packages/shared/dist
+
+# Local env (never ship production secrets from workstation)
+.env
+.env.*
+!.env.example
+!.env.development
+!.env.production.example
+
+# Logs and temp output
+*.log
+**/*.log
+test-out.txt
+tmp-*.txt
+*-out.txt
+push-out.txt
+seed-out.txt
+wait-out.txt
+tsc-api*.txt
+vite-build.txt
+_api-logs.txt
+_migrate-log.txt
+_deploy-*-log.txt
+
+# Deploy bundles and backups (regenerate locally; never upload old tarballs)
+.deploy-c2k-full.tgz
+.deploy-c2k.tgz
+_deploy-*.tar.gz
+_deploy-*.tgz
+*.tgz
+*.tar.gz
+backups
+**/backups
+*.bak
+*.backup
+*.sql.gz
+*.dump
+
+# Test and audit artifacts
+coverage
+**/coverage
+test-results
+**/test-results
+playwright-report
+**/playwright-report
+playwright/.cache
+visual-audit-output
+audit-output
+docs/audits/ui/screenshots
+docs/audits/**/*.zip
+
+# Generated local audit trees (large; not needed on VPS runtime)
+docs/audits
+
+# IDE / editor
+.idea
+.vscode
+.cursor
+
+# Mailserver runtime (VPS-local only)
+docker/mailserver/data
+docker/mailserver/state
+docker/mailserver/logs
+docker/mailserver/config
+
+# OS junk
+.DS_Store
+Thumbs.db

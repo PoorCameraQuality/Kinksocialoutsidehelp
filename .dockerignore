@@ -1,0 +1,49 @@
+node_modules
+**/node_modules
+**/dist
+.git
+**/.git
+
+# Env secrets
+.env
+.env.*
+!.env.example
+!.env.development
+!.env.production.example
+
+# Build caches
+*.tsbuildinfo
+**/*.tsbuildinfo
+.turbo
+**/.turbo
+.vite
+**/.vite
+
+# Test and audit artifacts
+e2e/test-results
+playwright-report
+test-results
+coverage
+visual-audit-output
+audit-output
+docs/audits
+
+# Logs and temp
+*.log
+**/*.log
+test-out.txt
+tmp-*.txt
+*-out.txt
+
+# Deploy bundles
+.deploy-c2k-full.tgz
+.deploy-c2k.tgz
+_deploy-*.tar.gz
+*.tgz
+*.tar.gz
+backups
+
+# IDE
+.cursor
+.idea
+.vscode

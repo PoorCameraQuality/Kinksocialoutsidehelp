@@ -1,0 +1,14 @@
+{
+  "canonical_url": "https://kink.social/.well-known/csaf/provider-metadata.json",
+  "last_updated": "2026-06-27T00:00:00.000Z",
+  "list_on_CSAF_aggregators": false,
+  "mirror_on_CSAF_aggregators": false,
+  "metadata_version": "2.0",
+  "publisher": {
+    "category": "vendor",
+    "contact_details": "mailto:sheldonkinneymmo.tm@gmail.com",
+    "name": "Kink Social",
+    "namespace": "https://kink.social"
+  },
+  "role": "csaf_trusted_provider"
+}

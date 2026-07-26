@@ -1,0 +1,67 @@
+# Production: canonical host is https://kink.social (set DOMAIN=kink.social in compose).
+# www and bare HTTP redirect to the apex over HTTPS.
+
+www.{$DOMAIN:localhost} {
+    redir https://{$DOMAIN:localhost}{uri} permanent
+}
+
+{$DOMAIN:localhost} {
+    encode gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    }
+
+    handle /api/public-seed/* {
+        uri replace /api/public-seed /seed
+        reverse_proxy web:80
+    }
+
+    handle /api/* {
+        reverse_proxy api:3001
+    }
+
+    handle /share/* {
+        reverse_proxy api:3001
+    }
+
+    handle /c2k-uploads/* {
+        reverse_proxy minio:9000
+    }
+
+    # Crawl policy files: dedicated handlers (no X-Robots-Tag). Helps GSC avoid
+    # "General HTTP error" when the catch-all noindex matcher misfires.
+    handle /robots.txt {
+        reverse_proxy web:80
+    }
+    handle /sitemap.xml {
+        reverse_proxy web:80
+    }
+
+    @private_launch not expression {env.C2K_PUBLIC_LAUNCH} == "true"
+    # Brand/legal allowlist may be indexed when C2K_PUBLIC_LAUNCH=true (FetLife-style).
+    # Keep in sync with KINK_SOCIAL_PUBLIC_SITEMAP_PATHS / kinkSocialPublicCaddyExemptPaths().
+    @not_landing not path / /robots.txt /sitemap.xml /about /terms /privacy /guidelines /adult-content-consent /minor-safety /ncii /dmca /law-enforcement /security /policies /policies/* /vendor-organizer-terms
+    handle {
+        header @private_launch X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+        header @not_landing X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+        reverse_proxy web:80
+    }
+}
+
+webmail.{$DOMAIN:localhost} {
+    encode gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    reverse_proxy roundcube:80
+}

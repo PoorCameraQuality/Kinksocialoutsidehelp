@@ -1,0 +1,137 @@
+# VPS overlay for kink.social — self-hosted SMTP + MinIO (S3-compatible uploads).
+# Usage: docker compose -f docker-compose.prod.yml -f docker-compose.prod.vps.yml up -d --build
+#
+# MAIL PORTS: Ensure VPS firewall AND provider allow inbound 25/587/465/993.
+# Many cloud providers block port 25 by default — request unblock before go-live.
+services:
+  postgres:
+    ports:
+      - '127.0.0.1:5432:5432'
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+    volumes:
+      - c2k_minio_prod:/data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
+      mc mb --ignore-existing local/$$S3_BUCKET &&
+      mc anonymous set download local/$$S3_BUCKET/media 2>/dev/null || true &&
+      exit 0
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-c2k-uploads}
+
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    volumes:
+      - c2k_clamdata_prod:/var/lib/clamav
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/clamdcheck.sh']
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 180s
+
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:latest
+    hostname: mail
+    domainname: ${DOMAIN:-kink.social}
+    restart: unless-stopped
+    # Inbound SMTP, submission, SMTPS, IMAPS — open on VPS firewall + provider.
+    ports:
+      - '25:25'
+      - '587:587'
+      - '465:465'
+      - '993:993'
+    volumes:
+      - ./docker/mailserver/data:/var/mail
+      - ./docker/mailserver/state:/var/mail-state
+      - ./docker/mailserver/logs:/var/log/mail
+      - ./docker/mailserver/config:/tmp/docker-mailserver
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - ENABLE_SPAMASSASSIN=0
+      - ENABLE_CLAMAV=0
+      - ENABLE_FAIL2BAN=1
+      - ENABLE_POSTGREY=0
+      - ENABLE_IMAP=1
+      - ONE_DIR=1
+      - PERMIT_DOCKER=connected-networks
+      - SSL_TYPE=
+      - POSTMASTER_ADDRESS=postmaster@${DOMAIN:-kink.social}
+    cap_add:
+      - NET_ADMIN
+    healthcheck:
+      test: ['CMD-SHELL', 'ss -lnt | grep -q ":587"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  roundcube:
+    image: roundcube/roundcubemail:latest
+    restart: unless-stopped
+    depends_on:
+      mailserver:
+        condition: service_healthy
+    volumes:
+      - c2k_roundcube_prod:/var/roundcube
+    environment:
+      ROUNDCUBEMAIL_DEFAULT_HOST: mailserver
+      ROUNDCUBEMAIL_DEFAULT_PORT: 143
+      ROUNDCUBEMAIL_SMTP_SERVER: mailserver
+      ROUNDCUBEMAIL_SMTP_PORT: 587
+      ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE: 5M
+      ROUNDCUBEMAIL_PRODUCT_NAME: ${DOMAIN:-kink.social} Webmail
+
+  api:
+    environment:
+      CLAMD_HOST: clamav
+      CLAMD_PORT: '3310'
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
+      mailserver:
+        condition: service_started
+
+  worker:
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      mailserver:
+        condition: service_started
+
+  caddy:
+    depends_on:
+      - web
+      - api
+      - minio
+      - roundcube
+
+volumes:
+  c2k_minio_prod:
+  c2k_clamdata_prod:
+  c2k_roundcube_prod:

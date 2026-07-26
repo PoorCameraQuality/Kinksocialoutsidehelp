@@ -1,0 +1,68 @@
+# Local infrastructure only — bind to loopback. Start app with: npm run dev (Vite + Fastify).
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:6432:5432'
+    environment:
+      POSTGRES_USER: c2k
+      POSTGRES_PASSWORD: c2k_dev
+      POSTGRES_DB: c2k_dev
+    volumes:
+      - c2k_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U c2k -d c2k_dev']
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - c2k_redisdata:/data
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - c2k_miniodata:/data
+
+  clamav:
+    image: clamav/clamav:stable
+    profiles: ['scanners']
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3310:3310'
+    volumes:
+      - c2k_clamdata:/var/lib/clamav
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/clamdcheck.sh']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+volumes:
+  c2k_pgdata:
+  c2k_redisdata:
+  c2k_miniodata:
+  c2k_clamdata:

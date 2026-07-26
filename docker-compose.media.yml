@@ -1,0 +1,29 @@
+# Optional imgproxy overlay — not started by default.
+# Usage: docker compose -f docker-compose.dev.yml -f docker-compose.media.yml up -d imgproxy
+#
+# Generate signing credentials (hex):
+#   openssl rand -hex 32  # IMGPROXY_KEY / imgproxy IMGPROXY_KEY
+#   openssl rand -hex 32  # IMGPROXY_SALT / imgproxy IMGPROXY_SALT
+#
+# Match packages/api env: IMGPROXY_ENABLED=true, IMGPROXY_BASE_URL=http://127.0.0.1:8080
+
+services:
+  imgproxy:
+    image: darthsim/imgproxy:v3.24
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8080:8080'
+    environment:
+      IMGPROXY_BIND: ':8080'
+      # Set in shell or .env next to compose — do not commit real keys
+      IMGPROXY_KEY: ${IMGPROXY_KEY:-}
+      IMGPROXY_SALT: ${IMGPROXY_SALT:-}
+      IMGPROXY_ENABLE_WEBP_DETECTION: 'true'
+      IMGPROXY_STRIP_METADATA: 'true'
+      IMGPROXY_STRIP_COLOR_PROFILE: 'true'
+      IMGPROXY_MAX_SRC_RESOLUTION: 50
+      IMGPROXY_MAX_SRC_FILE_SIZE: 20971520
+      # Allow fetching from local MinIO / API (dev only)
+      IMGPROXY_ALLOW_ORIGIN: 'http://127.0.0.1:9000,http://host.docker.internal:9000,http://127.0.0.1:3001,http://host.docker.internal:3001'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

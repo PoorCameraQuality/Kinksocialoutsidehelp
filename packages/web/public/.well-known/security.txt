@@ -1,0 +1,6 @@
+Contact: mailto:sheldonkinneymmo.tm@gmail.com
+Expires: 2027-06-30T09:27:00.000Z
+Preferred-Languages: en
+Policy: https://kink.social/security
+CSAF: https://kink.social/.well-known/csaf/provider-metadata.json
+Canonical: https://kink.social/.well-known/security.txt

@@ -1,0 +1,1079 @@
+/**
+ * Following / home feed — stream rows and post cards (FetLife-style rhythm).
+ * Scoped under `.feed-stream`.
+ */
+
+.feed-stream {
+  --feed-avatar-size: 2.125rem;
+  --feed-content-indent: 2.625rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+@media (min-width: 640px) {
+  .feed-stream {
+    --feed-avatar-size: 2.5rem;
+    --feed-content-indent: 3rem;
+    gap: 0.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .feed-stream {
+    --feed-avatar-size: 2.5rem;
+    --feed-content-indent: 3rem;
+    gap: 0.625rem;
+  }
+}
+
+/* ── Compact activity rows (reactions, joins, pins — ghost surface) ── */
+.feed-stream .feed-activity-row {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+}
+
+.feed-stream .feed-activity-row:last-child {
+  border-bottom: none;
+}
+
+.feed-stream .feed-activity-row__avatar {
+  flex-shrink: 0;
+  width: var(--feed-avatar-size);
+  height: var(--feed-avatar-size);
+}
+
+.feed-stream .feed-activity-row__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.feed-stream .feed-activity-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.375rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.feed-stream .feed-activity-row__user {
+  font-weight: 600;
+  color: var(--dc-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.feed-stream .feed-activity-row__user:hover {
+  color: var(--dc-accent);
+}
+
+.feed-stream .feed-activity-row__verb {
+  color: var(--dc-text-muted);
+}
+
+.feed-stream .feed-activity-row__time {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--dc-muted);
+}
+
+.feed-stream .feed-activity-row__body {
+  margin-top: 0.5rem;
+  padding-left: 0;
+}
+
+.feed-stream .feed-activity-row__excerpt {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--dc-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.feed-stream .feed-activity-row__target {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.feed-stream .feed-activity-row__target:hover .feed-activity-row__target-name {
+  color: var(--dc-accent);
+}
+
+.feed-stream .feed-activity-row__target-avatar {
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 0.375rem;
+  border: 1px solid var(--dc-border);
+  background: var(--dc-surface-muted);
+}
+
+.feed-stream .feed-activity-row__target-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--dc-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.feed-stream .feed-activity-row__target-meta {
+  font-size: 0.75rem;
+  color: var(--dc-muted);
+}
+
+.feed-stream .feed-activity-row__link {
+  margin-top: 0.375rem;
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dc-accent);
+}
+
+.feed-stream .feed-activity-row__link:hover {
+  text-decoration: underline;
+}
+
+.feed-stream .feed-activity-row:last-child {
+  border-bottom: none;
+}
+
+.feed-stream .feed-stream-activity-card {
+  /* Readable card surface — distinct from the page, slightly lighter than a
+     direct post so the stream hierarchy still reads. (Was ~10% opacity = washed out.) */
+  border-color: color-mix(in srgb, var(--dc-border) 70%, transparent) !important;
+  background: color-mix(in srgb, var(--dc-elevated-solid) 90%, var(--dc-accent) 5%) !important;
+  box-shadow: var(--dc-shadow-soft) !important;
+  backdrop-filter: none;
+}
+
+/* ── Full post cards ── */
+.feed-stream .feed-stream-post {
+  padding: 0.4375rem 0 0.375rem;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post {
+    padding: 0.875rem 0 0.75rem;
+  }
+}
+
+.feed-stream .feed-stream-post--direct {
+  padding: 0.625rem 0.6875rem 0.5rem;
+  border-radius: 0.875rem;
+  /* Clean charcoal/navy object — no rose tint; let atmosphere supply the warmth. */
+  border: 1px solid color-mix(in srgb, var(--dc-border-strong) 42%, var(--dc-border-subtle));
+  background: color-mix(in srgb, var(--dc-surface-card) 70%, var(--dc-elevated-solid));
+  box-shadow:
+    var(--dc-shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post--direct {
+    padding: 1rem 1.125rem 0.875rem;
+    border-radius: 1.125rem;
+  }
+}
+
+/* Very short text-only posts read compact instead of a tall empty slab. */
+.feed-stream .feed-stream-post--direct.feed-stream-post--compact {
+  padding-top: 0.5rem;
+  padding-bottom: 0.4375rem;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post--direct.feed-stream-post--compact {
+    padding-top: 0.75rem;
+    padding-bottom: 0.625rem;
+  }
+}
+
+.feed-stream .feed-stream-post--direct .feed-action-bar {
+  border-color: color-mix(in srgb, var(--dc-border-subtle) 50%, transparent);
+  background: color-mix(in srgb, var(--dc-surface) 35%, transparent);
+}
+
+.feed-stream .feed-stream-post--secondary {
+  padding: 0.3125rem 0 0.4375rem;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--dc-border) 35%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post--secondary {
+    padding: 0.5rem 0 0.625rem;
+  }
+}
+
+.feed-stream .feed-stream-post--secondary:last-child {
+  border-bottom: none;
+}
+
+.feed-stream .feed-stream-post--secondary .feed-action-bar {
+  border-color: color-mix(in srgb, var(--dc-border) 40%, transparent);
+  background: color-mix(in srgb, var(--dc-elevated-muted) 18%, transparent);
+}
+
+.feed-stream .feed-stream-post__head {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__head {
+    gap: 0.75rem;
+  }
+}
+
+.feed-stream .feed-stream-post__avatar {
+  flex-shrink: 0;
+  width: var(--feed-avatar-size);
+  height: var(--feed-avatar-size);
+}
+
+.feed-stream .feed-stream-post__meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.feed-stream .feed-stream-post__title-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.feed-stream .feed-stream-post__subtitle-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem 0.375rem;
+  margin-top: 0.125rem;
+}
+
+.feed-stream .feed-stream-post__user {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dc-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__user {
+    font-size: 0.9375rem;
+  }
+}
+
+.feed-stream .feed-stream-post__user:hover {
+  color: var(--dc-accent);
+}
+
+.feed-stream .feed-stream-post__verb {
+  font-size: 0.8125rem;
+  color: var(--dc-text-muted);
+}
+
+.feed-stream .feed-stream-post__time {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  color: var(--dc-muted);
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__time {
+    font-size: 0.75rem;
+  }
+}
+
+.feed-stream .feed-stream-post__menu {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.feed-stream .feed-stream-post__menu button {
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__menu button {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+}
+
+.feed-stream .feed-stream-post__body {
+  margin-top: 0.375rem;
+  padding-left: var(--feed-content-indent);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--dc-text);
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__body {
+    margin-top: 0.625rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+}
+
+.feed-stream .feed-stream-post__body h3 {
+  margin-bottom: 0.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__body h3 {
+    margin-bottom: 0.375rem;
+    font-size: 1rem;
+  }
+}
+
+.feed-stream .feed-stream-post__media {
+  margin-top: 0.5rem;
+  margin-left: var(--feed-content-indent);
+  overflow: hidden;
+  border-radius: 0.875rem;
+  /* Refined navy media shell — soft, not a harsh pure-black stage. */
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: radial-gradient(
+    ellipse 130% 90% at 50% 0%,
+    color-mix(in srgb, var(--dc-elevated-solid) 55%, var(--dc-surface-muted)) 0%,
+    var(--dc-surface-muted) 72%
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  max-width: calc(100% - var(--feed-content-indent));
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__media {
+    margin-top: 0.75rem;
+    border-radius: 0.875rem;
+  }
+}
+
+.feed-stream .feed-stream-post__media img {
+  display: block;
+  width: 100%;
+  max-height: 22rem;
+  object-fit: contain;
+  background: transparent;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__media img {
+    max-height: 26rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .feed-stream .feed-stream-post__media img {
+    max-height: 30rem;
+  }
+}
+
+.feed-stream .feed-stream-post__actions {
+  margin-top: 0.375rem;
+  padding-left: var(--feed-content-indent);
+  max-width: 100%;
+  container-type: inline-size;
+  container-name: feed-post-actions;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__actions {
+    margin-top: 0.625rem;
+  }
+}
+
+/* Story-style activity (events) — light panel, still stream-aligned */
+.feed-stream .feed-stream-story {
+  margin-left: var(--feed-content-indent);
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--dc-border) 45%, transparent);
+  background: color-mix(in srgb, var(--dc-elevated-solid) 12%, transparent);
+  box-shadow: none;
+}
+
+.feed-stream .feed-repost-banner {
+  margin-bottom: 0.375rem;
+  padding-left: var(--feed-content-indent);
+  font-size: 0.6875rem;
+  color: var(--dc-muted);
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-repost-banner {
+    margin-bottom: 0.625rem;
+    font-size: 0.75rem;
+  }
+}
+
+.feed-stream .feed-repost-banner a {
+  font-weight: 600;
+  color: var(--dc-accent);
+}
+
+/* ── Footer action bar — React · Comment · Share (three equal actions) ── */
+.feed-stream .feed-action-bar {
+  overflow: visible;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--dc-border-subtle) 55%, transparent);
+  background: color-mix(in srgb, var(--dc-surface) 40%, transparent);
+}
+
+.feed-stream .feed-action-bar__track {
+  display: flex;
+  min-height: 2.75rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  flex-wrap: nowrap;
+  gap: 0.125rem;
+  overflow: hidden;
+  padding: 0.1875rem;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-action-bar__track {
+    min-height: 2.5rem;
+    padding: 0.25rem;
+    gap: 0.1875rem;
+  }
+}
+
+.feed-stream .feed-action-bar__react-anchor {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.feed-stream .feed-action-bar__react-anchor .feed-action-bar__btn {
+  width: 100%;
+}
+
+.feed-stream .feed-action-bar__track > .feed-action-bar__btn,
+.feed-stream .feed-action-bar__react-anchor .feed-action-bar__btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.feed-stream .feed-action-bar__btn {
+  display: inline-flex;
+  min-height: 2.5rem;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3125rem;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--dc-text-muted);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-action-bar__btn {
+    min-height: 2.25rem;
+    gap: 0.375rem;
+    padding: 0.4375rem 0.625rem;
+    font-size: 0.8125rem;
+  }
+}
+
+.feed-stream .feed-action-bar__btn svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.feed-stream .feed-action-bar__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed-stream .feed-action-bar__btn:hover:not(:disabled) {
+  background: var(--dc-elevated-hover);
+  color: var(--dc-text);
+}
+
+.feed-stream .feed-action-bar__btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dc-accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+/* Active reaction — velvet rose on the React affordance. */
+.feed-stream .feed-action-bar__btn--react-active,
+.feed-stream .feed-action-bar__btn[aria-pressed='true'] {
+  color: var(--dc-accent);
+  background: color-mix(in srgb, var(--dc-accent) 15%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dc-accent) 32%, transparent);
+}
+
+.feed-stream .feed-action-bar__btn--react-active:hover:not(:disabled),
+.feed-stream .feed-action-bar__btn[aria-pressed='true']:hover:not(:disabled) {
+  color: var(--dc-accent);
+  background: color-mix(in srgb, var(--dc-accent) 22%, transparent);
+}
+
+.feed-stream .feed-action-bar__btn:disabled {
+  cursor: not-allowed;
+}
+
+/* Reaction picker — popover (desktop) + sheet (mobile) */
+.feed-reaction-picker__option {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  color: var(--dc-text);
+  transition: background-color 0.15s ease;
+}
+
+.feed-reaction-picker__option:hover:not(:disabled) {
+  background: var(--dc-elevated-hover);
+}
+
+.feed-reaction-picker__option:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dc-accent) 45%, transparent);
+  outline-offset: -2px;
+}
+
+.feed-reaction-picker__option--active {
+  background: color-mix(in srgb, var(--dc-accent) 12%, transparent);
+  color: var(--dc-accent);
+}
+
+.feed-reaction-picker__option-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--dc-accent);
+}
+
+.feed-reaction-picker__option-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.feed-reaction-picker__option-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.feed-reaction-picker__option-hint {
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  color: var(--dc-muted);
+}
+
+.feed-reaction-picker__option--active .feed-reaction-picker__option-hint {
+  color: color-mix(in srgb, var(--dc-accent) 70%, var(--dc-muted));
+}
+
+.feed-reaction-picker__option-check {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--dc-accent);
+}
+
+.feed-reaction-picker__sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.5rem;
+}
+
+.feed-reaction-picker__sheet-options {
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0.5rem 0.75rem;
+}
+
+.feed-reaction-picker__sheet-options .feed-reaction-picker__option {
+  min-height: 3rem;
+  border-radius: 0.75rem;
+}
+
+.feed-reaction-picker__sheet-options .feed-reaction-picker__option-hint {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .feed-reaction-picker__popover .feed-reaction-picker__option-hint {
+    display: block;
+  }
+}
+
+/* Aggregated media activity preview strip */
+.feed-stream .feed-media-strip {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding-bottom: 0.125rem;
+  scrollbar-width: thin;
+}
+
+.feed-stream .feed-media-strip__thumb {
+  flex: 0 0 auto;
+  display: block;
+  width: 5rem;
+  height: 5rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid var(--dc-border);
+  background: var(--dc-elevated-muted);
+  text-decoration: none;
+  color: inherit;
+}
+
+.feed-stream a.feed-media-strip__thumb:hover {
+  border-color: var(--dc-accent);
+}
+
+.feed-stream .feed-media-strip__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.feed-stream .feed-media-strip__more {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  height: 5rem;
+  padding: 0 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px dashed var(--dc-border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dc-text-muted);
+}
+
+.feed-stream a.feed-media-strip__more {
+  text-decoration: none;
+  color: inherit;
+}
+
+.feed-stream a.feed-media-strip__more:hover {
+  border-color: var(--dc-accent);
+  color: var(--dc-accent);
+}
+
+.feed-stream .feed-activity-row--connection .feed-activity-row__head {
+  flex-wrap: wrap;
+}
+
+.feed-stream .feed-connection-mini-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+.feed-stream .feed-connection-mini-list__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.125rem;
+  border-radius: 9999px;
+  border: 1px solid var(--dc-border);
+  background: var(--dc-elevated-muted);
+  font-size: 0.6875rem;
+  color: var(--dc-text-muted);
+  text-decoration: none;
+}
+
+.feed-stream .feed-connection-mini-list__chip:hover {
+  color: var(--dc-text);
+  border-color: var(--dc-accent-border);
+}
+
+.feed-stream .feed-connection-mini-list__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: var(--dc-accent-muted);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--dc-accent);
+}
+
+.feed-stream .feed-stream-post__body--inline {
+  margin-top: 0.25rem;
+  padding-left: 0;
+}
+
+/* Long post readability — clamp with a Show more toggle. */
+.feed-stream .feed-stream-post__body-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 10;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.feed-stream .feed-stream-post__more-toggle {
+  margin-top: 0.3125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dc-accent);
+}
+
+.feed-stream .feed-stream-post__more-toggle:hover {
+  text-decoration: underline;
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__body--inline {
+    margin-top: 0.375rem;
+  }
+}
+
+.feed-stream .feed-comment-preview {
+  display: block;
+  margin-top: 0.375rem;
+  margin-left: var(--feed-content-indent);
+  max-width: calc(100% - var(--feed-content-indent));
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--dc-border) 65%, transparent);
+  background: color-mix(in srgb, var(--dc-elevated-muted) 55%, transparent);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.feed-stream .feed-comment-preview:hover {
+  border-color: color-mix(in srgb, var(--dc-accent-border) 55%, var(--dc-border));
+  background: color-mix(in srgb, var(--dc-elevated-muted) 75%, transparent);
+}
+
+.feed-stream .feed-comment-preview--count-only {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dc-accent);
+}
+
+.feed-stream .feed-comment-preview__row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.feed-stream .feed-comment-preview__meta {
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+.feed-stream .feed-comment-preview__body {
+  margin-top: 0.125rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--dc-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.feed-stream .feed-comment-preview__more {
+  display: inline-block;
+  margin-top: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--dc-accent);
+}
+
+/* ── Header context label (inferred post type, honest — no fake "Near you") ── */
+.feed-stream .feed-stream-post__context {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--dc-text-subtle);
+}
+
+@media (min-width: 640px) {
+  .feed-stream .feed-stream-post__context {
+    font-size: 0.75rem;
+  }
+}
+
+/* ── Engagement summary (real counts only) ── */
+.feed-stream .feed-stream-post__summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.375rem;
+  padding-left: var(--feed-content-indent);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--dc-muted);
+}
+
+.feed-stream .feed-stream-post__summary-avatars {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.125rem;
+}
+
+.feed-stream .feed-stream-post__summary-avatars > * + * {
+  margin-left: -0.375rem;
+}
+
+.feed-stream .feed-stream-post__summary-dot {
+  opacity: 0.55;
+}
+
+/* ── Basic link preview for plain-text posts that contain a URL ── */
+.feed-stream .feed-link-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  margin-top: 0.5rem;
+  margin-left: var(--feed-content-indent);
+  max-width: calc(100% - var(--feed-content-indent));
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--dc-border-subtle) 70%, transparent);
+  background: color-mix(in srgb, var(--dc-surface) 45%, transparent);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.feed-stream .feed-link-preview:hover {
+  border-color: color-mix(in srgb, var(--dc-accent-border) 55%, var(--dc-border-subtle));
+  background: color-mix(in srgb, var(--dc-surface) 62%, transparent);
+}
+
+.feed-stream .feed-link-preview__domain {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--dc-accent);
+}
+
+.feed-stream .feed-link-preview__url {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dc-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Feed well — a near-invisible vertical backing behind the desktop center column so
+ * the feed reads as intentionally placed instead of floating in the atmosphere glow.
+ * Desktop only; kept subtle and inside the column slack so it never overlaps rails.
+ */
+@media (min-width: 1280px) {
+  .dc-feed-well {
+    position: relative;
+  }
+
+  .dc-feed-well::before {
+    content: '';
+    position: absolute;
+    inset: -1.25rem -0.75rem;
+    z-index: -1;
+    border-radius: 1.5rem;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--dc-surface) 60%, transparent) 9%,
+      color-mix(in srgb, var(--dc-surface) 60%, transparent) 91%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+}
+
+/*
+ * ── Network highlights ──────────────────────────────────────────────────────
+ * Following-feed activity, folded into one compact grouped module so the feed
+ * reads social (posts first) rather than as a raw activity log. Calm charcoal
+ * surface, subtle rose accent, list rhythm — never a stack of big cards.
+ */
+.dc-net-highlights {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.875rem 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--dc-border-subtle) 70%, transparent);
+  background: color-mix(in srgb, var(--dc-surface-card) 55%, var(--dc-elevated-solid));
+  box-shadow: var(--dc-shadow-soft);
+}
+
+.dc-net-highlights__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0 0.125rem 0.375rem;
+}
+
+.dc-net-highlights__title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--dc-text);
+}
+
+.dc-net-highlights__sub {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--dc-text-subtle);
+}
+
+.dc-net-highlights__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.dc-net-highlight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.25rem;
+  border-radius: 0.5rem;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.14s ease;
+}
+
+.dc-net-highlight + .dc-net-highlight {
+  border-top: 1px solid color-mix(in srgb, var(--dc-border-subtle) 38%, transparent);
+}
+
+.dc-net-highlight--link {
+  cursor: pointer;
+}
+
+.dc-net-highlight--link:hover {
+  background: color-mix(in srgb, var(--dc-elevated-hover) 60%, transparent);
+}
+
+.dc-net-highlight__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--dc-accent) 22%, var(--dc-border-subtle));
+  background: color-mix(in srgb, var(--dc-accent) 12%, transparent);
+  color: var(--dc-accent);
+}
+
+.dc-net-highlight__text {
+  min-width: 0;
+  flex: 1;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--dc-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dc-net-highlight__actor {
+  font-weight: 600;
+  color: var(--dc-text);
+  text-decoration: none;
+}
+
+.dc-net-highlight--link:hover .dc-net-highlight__actor,
+.dc-net-highlight__actor:hover {
+  color: var(--dc-accent);
+}
+
+.dc-net-highlight__meta {
+  color: var(--dc-text-subtle);
+}
+
+.dc-net-highlight__time {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--dc-text-subtle);
+}
+
+.dc-net-highlights__more {
+  margin: 0.25rem 0.125rem 0.125rem;
+  padding: 0.25rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dc-accent);
+}
+
+.dc-net-highlights__more:hover {
+  text-decoration: underline;
+}

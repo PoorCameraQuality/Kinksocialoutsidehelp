@@ -1,0 +1,66 @@
+# Optional observability stack for local/staging — NOT wired into production compose.
+# Usage: docker compose -f docker-compose.observability.yml up -d
+#
+# GlitchTip UI:      http://127.0.0.1:8080
+# Uptime Kuma UI:    http://127.0.0.1:3002
+
+services:
+  glitchtip-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: glitchtip
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: glitchtip
+    volumes:
+      - glitchtip_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U glitchtip -d glitchtip']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  glitchtip-redis:
+    image: redis:7-alpine
+    command: redis-server --save "" --appendonly no
+
+  glitchtip-web:
+    image: glitchtip/glitchtip:latest
+    depends_on:
+      glitchtip-postgres:
+        condition: service_healthy
+      glitchtip-redis:
+        condition: service_started
+    ports:
+      - '8080:8080'
+    environment:
+      DATABASE_URL: postgres://glitchtip:glitchtip@glitchtip-postgres:5432/glitchtip
+      REDIS_URL: redis://glitchtip-redis:6379/0
+      SECRET_KEY: change-me-local-glitchtip-secret
+      PORT: '8080'
+      GLITCHTIP_DOMAIN: http://127.0.0.1:8080
+      DEFAULT_FROM_EMAIL: glitchtip@localhost
+      CELERY_WORKER_AUTOSCALE: '1,3'
+      CELERY_WORKER_MAX_TASKS_PER_CHILD: '10000'
+
+  glitchtip-worker:
+    image: glitchtip/glitchtip:latest
+    command: ./bin/run-celery-with-beat.sh
+    depends_on:
+      - glitchtip-web
+    environment:
+      DATABASE_URL: postgres://glitchtip:glitchtip@glitchtip-postgres:5432/glitchtip
+      REDIS_URL: redis://glitchtip-redis:6379/0
+      SECRET_KEY: change-me-local-glitchtip-secret
+      GLITCHTIP_DOMAIN: http://127.0.0.1:8080
+      DEFAULT_FROM_EMAIL: glitchtip@localhost
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    ports:
+      - '3002:3001'
+    volumes:
+      - uptime_kuma:/app/data
+
+volumes:
+  glitchtip_pg:
+  uptime_kuma:

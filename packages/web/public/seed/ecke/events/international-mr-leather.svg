@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="International Mr Leather">
+  <defs>
+    <linearGradient id="iml" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1c1917"/>
+      <stop offset="50%" stop-color="#292524"/>
+      <stop offset="100%" stop-color="#1c1917"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="16" fill="url(#iml)"/>
+  <text x="100" y="92" text-anchor="middle" fill="#fbbf24" font-family="Georgia,serif" font-size="32" font-weight="bold">IML</text>
+  <text x="100" y="122" text-anchor="middle" fill="#d6d3d1" font-family="system-ui,sans-serif" font-size="11">International Mr. Leather</text>
+  <text x="100" y="142" text-anchor="middle" fill="#78716c" font-family="system-ui,sans-serif" font-size="10">Chicago</text>
+</svg>

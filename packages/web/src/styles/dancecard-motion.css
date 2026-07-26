@@ -1,0 +1,107 @@
+/**
+ * ECKE / Dancecard motion - tab cross-fades, panel enter, skeleton stagger.
+ * Respects prefers-reduced-motion.
+ */
+
+@keyframes dc-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dc-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.dc-tab-content-enter {
+  animation: dc-panel-in 0.2s ease-out forwards;
+}
+
+.dc-panel-enter {
+  animation: dc-panel-in 0.28s ease-out forwards;
+}
+
+.dc-skeleton-stagger > * {
+  animation: dc-panel-in 0.32s ease-out backwards;
+}
+
+.dc-skeleton-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.dc-skeleton-stagger > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.dc-skeleton-stagger > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.dc-skeleton-stagger > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.dc-skeleton-stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.dc-skeleton-stagger > *:nth-child(6) {
+  animation-delay: 200ms;
+}
+.dc-skeleton-stagger > *:nth-child(n + 7) {
+  animation-delay: 240ms;
+}
+
+.dc-skeleton-bone {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--dc-surface-muted) 88%, transparent) 0%,
+    color-mix(in srgb, var(--dc-elevated-solid) 70%, transparent) 50%,
+    color-mix(in srgb, var(--dc-surface-muted) 88%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: dc-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes media-upload-indeterminate {
+  0% {
+    transform: scaleX(0.15) translateX(-120%);
+  }
+  50% {
+    transform: scaleX(0.45) translateX(40%);
+  }
+  100% {
+    transform: scaleX(0.15) translateX(220%);
+  }
+}
+
+@keyframes media-upload-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-tab-content-enter,
+  .dc-panel-enter,
+  .dc-skeleton-stagger > * {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+
+  .dc-skeleton-bone {
+    animation: none !important;
+    background: var(--dc-surface-muted);
+  }
+}

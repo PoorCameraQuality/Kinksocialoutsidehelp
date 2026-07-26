@@ -1,0 +1,25 @@
+/** Shared user-facing copy for Dancecard (generic ECKE platform). */
+
+export const copy = {
+  activity: 'activity',
+  activities: 'activities',
+  class: 'class',
+  classes: 'classes',
+  shift: 'shift',
+  shifts: 'shifts',
+  signups: 'Signups',
+  roster: 'Roster',
+  scheduleCredits: 'Schedule credits',
+  coverageRole: 'Coverage role',
+  trustedRoleApplication: 'Trusted role application',
+  addToDancecard: 'Add to your dancecard',
+  goLiveOnDancecard: 'Go live on dancecard',
+  setupIncomplete: 'Setup incomplete',
+  somethingWentWrong: 'Something went wrong. Try refreshing the page.',
+  agreements: 'Agreements',
+  agreementsComplete: 'All required agreements signed',
+  agreementsPending: 'Agreements still needed',
+  signPolicies: 'Sign required policies',
+  manageRegistration: 'Manage registration',
+  checkIn: 'Check-in',
+} as const

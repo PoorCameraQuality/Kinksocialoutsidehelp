@@ -1,0 +1,61 @@
+/**
+ * Mobile-only layout utilities (Sprint 1).
+ * Bottom-nav clearance, horizontal snap carousels — not cross-breakpoint card/empty polish.
+ * Cross-breakpoint primitives: shared-surfaces.css
+ * Desktop lg+ polish: desktop-surfaces.css
+ * Any edit requires mobile screenshot verification (see UI_DESKTOP_SPRINT_3.md).
+ */
+
+/** Nested scroll areas that need explicit clearance (main also pads via RootLayout) */
+.c2k-mobile-scroll-pad {
+  padding-bottom: var(--c2k-bottom-nav-clearance);
+}
+
+@media (min-width: 768px) {
+  .c2k-mobile-scroll-pad {
+    padding-bottom: 0;
+  }
+}
+
+/** Intentional horizontal snap rows (education, events featured, landing previews) */
+.c2k-snap-carousel {
+  position: relative;
+}
+
+.c2k-snap-carousel__track {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+  padding-bottom: 0.25rem;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.c2k-snap-carousel__track::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.c2k-snap-carousel__track > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+.c2k-snap-carousel__fade {
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0.25rem;
+  width: 2.5rem;
+  background: linear-gradient(to left, var(--dc-surface, #0f0f0f), transparent);
+}
+
+@media (min-width: 768px) {
+  .c2k-snap-carousel__fade {
+    display: none;
+  }
+}

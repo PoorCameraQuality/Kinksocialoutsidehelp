@@ -1,0 +1,418 @@
+@import '../styles/dancecard-parity.css';
+@import '../styles/dancecard-tokens.css';
+@import '../styles/dancecard-motion.css';
+@import '../styles/shared-surfaces.css';
+@import '../styles/premium-surfaces.css';
+@import '../styles/mobile-polish.css';
+@import '../styles/browser-compat.css';
+@import '../styles/desktop-surfaces.css';
+@import '../styles/education-hub.css';
+@import '../styles/explore-hub.css';
+@import '../styles/feed-activity.css';
+@import '../styles/create-flow.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Safe area + mobile bottom nav clearance (design docs 02 / 04 / 08) */
+@layer utilities {
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Main scroll column: room for fixed BottomNav on phones/tablets (until lg) */
+  .c2k-main-mobile-pb {
+    padding-bottom: var(--c2k-main-mobile-pb);
+  }
+  .c2k-mobile-nav-pb {
+    padding-bottom: var(--c2k-mobile-nav-pb);
+  }
+  .c2k-main-mobile-pb-action {
+    padding-bottom: var(--c2k-main-mobile-pb-action);
+  }
+  @media (min-width: 1024px) {
+    .c2k-main-mobile-pb,
+    .c2k-mobile-nav-pb,
+    .c2k-main-mobile-pb-action {
+      padding-bottom: 0;
+    }
+  }
+  /* Onboarding: no bottom nav — sticky action bar sits on safe area */
+  .c2k-onboarding-no-bottom-nav .c2k-fixed-above-bottom-nav {
+    bottom: 0;
+  }
+  /* Fixed/sticky bars that must sit above BottomNav (lg+ uses bottom-0) */
+  .c2k-fixed-above-bottom-nav {
+    bottom: var(--c2k-mobile-sticky-action-bottom);
+  }
+  @media (min-width: 1024px) {
+    .c2k-fixed-above-bottom-nav {
+      bottom: 0;
+    }
+  }
+  /* Mobile FAB — above bottom nav + safe area */
+  .c2k-fab-position {
+    bottom: var(--c2k-fab-bottom);
+  }
+  @media (min-width: 1024px) {
+    .c2k-fab-position {
+      bottom: auto;
+    }
+  }
+  /* Toasts and floating pills above BottomNav */
+  .c2k-toast-above-bottom-nav {
+    bottom: calc(var(--c2k-bottom-nav-total-h) + 1rem);
+  }
+  @media (min-width: 1024px) {
+    .c2k-toast-above-bottom-nav {
+      bottom: 1rem;
+    }
+  }
+  /* Sticky footers inside scroll containers */
+  .c2k-sticky-above-bottom-nav {
+    bottom: var(--c2k-bottom-nav-total-h);
+  }
+  @media (min-width: 1024px) {
+    .c2k-sticky-above-bottom-nav {
+      bottom: 0;
+    }
+  }
+  .c2k-mobile-viewport-fill {
+    height: var(--c2k-mobile-viewport-fill-h);
+    margin-bottom: calc(-1 * var(--c2k-bottom-nav-total-h));
+  }
+  @media (min-width: 1024px) {
+    .c2k-mobile-viewport-fill {
+      height: calc(100dvh - var(--c2k-sticky-below-header));
+      margin-bottom: 0;
+    }
+  }
+  /* Hide scrollbars but keep overflow scroll (e.g. auto carousels).
+     Global * rules above exclude .c2k-no-scrollbar so thin scrollbars are not re-applied. */
+  .c2k-no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .c2k-no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+:root {
+  /* Soft charcoal palette */
+  --c2k-bg: #0f0f0f;
+  --c2k-bg-card: #1a1a1a;
+  --c2k-bg-elevated: #252525;
+  --c2k-bg-charcoal: #2d2d2d;
+  /* Accent: teal (black & teal & white theme) */
+  --c2k-accent-primary: #14b8a6;
+  --c2k-accent-primary-hover: #0d9488;
+  --c2k-accent-secondary: #22d3ee;
+  --c2k-accent-secondary-hover: #06b6d4;
+  --c2k-text-primary: #ffffff;
+  --c2k-text-secondary: #a3a3a3;
+  --c2k-text-muted: #737373;
+  --c2k-border: #404040;
+  --c2k-border-strong: #525252;
+  --c2k-overlay-scrim: rgb(0 0 0 / 0.55);
+  --c2k-focus-ring: var(--c2k-accent-primary);
+  /* Semantic intent (see docs/design/08-DESIGN_TOKENS.md) */
+  --c2k-danger: #ef4444;
+  --c2k-success: #10b981;
+  --c2k-warning: #f59e0b;
+  /* 4px rhythm spacing tokens */
+  --c2k-space-1: 0.25rem;
+  --c2k-space-2: 0.5rem;
+  --c2k-space-3: 0.75rem;
+  --c2k-space-4: 1rem;
+  --c2k-space-5: 1.25rem;
+  --c2k-space-6: 1.5rem;
+  /* Card tokens */
+  --c2k-card-radius: 1rem;
+  --c2k-shadow-soft: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --c2k-scrollbar-track: #1a1a1a;
+  --c2k-scrollbar-thumb: #404040;
+  --c2k-scrollbar-thumb-hover: #525252;
+  /* Organizer console (command bridge) - scoped contrast bump on dark site chrome */
+  --organizer-sidebar-width: 15rem;
+  /* Low-risk dc bridge (CP2): surfaces/status only; layout padding unchanged */
+  --organizer-panel-bg: var(--dc-elevated-solid, #1e1e1e);
+  --organizer-panel-padding-y: 0.75rem;
+  --organizer-panel-padding-x: 1rem;
+  --organizer-status-draft: var(--dc-warning, #f59e0b);
+  --organizer-status-published: var(--dc-success, #10b981);
+  --organizer-status-stale: var(--dc-danger, #ef4444);
+  --organizer-status-never: var(--dc-text-muted, #9ca3af);
+  /* Stacked sticky chrome (header + community nav) - UI_UX_DECISIONS Wave 1 A9 */
+  --c2k-header-h: 4rem;
+  --c2k-community-nav-h: 7.25rem;
+  --c2k-sticky-below-header: calc(var(--c2k-header-h) + env(safe-area-inset-top, 0px));
+  --c2k-sticky-below-community-nav: calc(var(--c2k-sticky-below-header) + var(--c2k-community-nav-h));
+  /* Mobile bottom nav (BottomNav.tsx h-16 + home-indicator safe area) */
+  --c2k-bottom-nav-h: 4rem;
+  --c2k-bottom-nav-total-h: calc(var(--c2k-bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+  --c2k-mobile-fixed-gap: 0.75rem;
+  --c2k-mobile-breathing: 1.5rem;
+  --c2k-mobile-sticky-action-bottom: var(--c2k-bottom-nav-total-h);
+  --c2k-bottom-nav-clearance: calc(var(--c2k-bottom-nav-total-h) + var(--c2k-mobile-breathing));
+  --c2k-fab-size: 3.5rem;
+  --c2k-fab-gap: var(--c2k-mobile-fixed-gap);
+  --c2k-fab-bottom: calc(var(--c2k-bottom-nav-total-h) + var(--c2k-mobile-fixed-gap));
+  /* Nav + breathing room only (no FAB) */
+  --c2k-mobile-nav-pb: var(--c2k-bottom-nav-clearance);
+  /* Nav + FAB clearance for Tier-A create surfaces */
+  --c2k-main-mobile-pb: calc(var(--c2k-bottom-nav-clearance) + var(--c2k-fab-size) + var(--c2k-fab-gap));
+  --c2k-save-bar-h: 3.75rem;
+  --c2k-mobile-action-bar-h: 3.75rem;
+  --c2k-mobile-action-bar-total-h: calc(
+    var(--c2k-mobile-action-bar-h) + env(safe-area-inset-bottom, 0px)
+  );
+  --c2k-mobile-action-clearance: calc(
+    var(--c2k-bottom-nav-total-h) + var(--c2k-mobile-action-bar-total-h) + var(--c2k-mobile-breathing)
+  );
+  --c2k-main-mobile-pb-action: var(--c2k-mobile-action-clearance);
+  --c2k-mobile-sheet-max-height: min(
+    85dvh,
+    calc(100dvh - var(--c2k-header-h) - var(--c2k-bottom-nav-total-h) - 1rem)
+  );
+  --c2k-mobile-viewport-fill-h: calc(
+    100dvh - var(--c2k-sticky-below-header) - var(--c2k-bottom-nav-clearance)
+  );
+  /* Typography — Manrope (UI) + Sora (display) */
+  --c2k-font-ui: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --c2k-font-display: 'Sora', 'Manrope', system-ui, sans-serif;
+  --font-body: var(--c2k-font-ui);
+  --font-display: var(--c2k-font-display);
+}
+
+@keyframes c2k-route-pending {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.2s;
+    animation-timing-function: ease-out;
+  }
+  ::view-transition-old(root) {
+    animation-name: c2k-view-transition-out;
+  }
+  ::view-transition-new(root) {
+    animation-name: c2k-view-transition-in;
+  }
+}
+
+@keyframes c2k-view-transition-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes c2k-view-transition-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes feed-tap-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes feed-reaction-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--dc-accent) 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .feed-tap-pop {
+    animation: feed-tap-pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .feed-reaction-ring {
+    animation: feed-reaction-ring 0.45s ease-out;
+  }
+
+  .feed-tap-control {
+    transition:
+      transform 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .feed-tap-control:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-tap-pop,
+  .feed-reaction-ring {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+.organizer-shell {
+  --c2k-text-secondary: #c4c4c4;
+  --c2k-text-muted: #9ca3af;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+  body {
+    @apply bg-c2k-bg text-c2k-text-primary font-sans antialiased;
+    font-family: var(--c2k-font-ui);
+    scrollbar-color: var(--c2k-scrollbar-thumb) var(--c2k-scrollbar-track);
+    scrollbar-width: thin;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--c2k-font-display);
+    letter-spacing: -0.02em;
+  }
+  body:has(.dc-gold-chrome) {
+    background-color: var(--dc-surface);
+    color: var(--dc-text);
+    scrollbar-color: var(--dc-border-strong) var(--dc-surface-muted);
+  }
+  .dc-gold-chrome {
+    color-scheme: dark;
+  }
+  .dc-gold-chrome[data-dc-appearance='coastal-slate'],
+  .dc-gold-chrome[data-dc-appearance='parchment'] {
+    color-scheme: light;
+  }
+  *:not(.c2k-no-scrollbar) {
+    scrollbar-color: var(--c2k-scrollbar-thumb) var(--c2k-scrollbar-track);
+    scrollbar-width: thin;
+  }
+  *:not(.c2k-no-scrollbar)::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *:not(.c2k-no-scrollbar)::-webkit-scrollbar-track {
+    background: var(--c2k-scrollbar-track);
+  }
+  *:not(.c2k-no-scrollbar)::-webkit-scrollbar-thumb {
+    background: var(--c2k-scrollbar-thumb);
+    border-radius: 9999px;
+    border: 2px solid var(--c2k-scrollbar-track);
+  }
+  *:not(.c2k-no-scrollbar)::-webkit-scrollbar-thumb:hover {
+    background: var(--c2k-scrollbar-thumb-hover);
+  }
+  /* Prevent SVGs from stretching in flex containers */
+  svg {
+    flex-shrink: 0;
+  }
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-2 outline-offset-2 outline-dc-accent;
+  }
+}
+
+/* Unlayered: scrollbar hide must beat @layer ordering (some builds left horizontal bars visible). */
+.c2k-no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.c2k-no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+@layer components {
+  /* Legacy community tab classes - prefer CommunityHubShell + TabShell (ECKE V2). */
+  .c2k-community-shell-tabs {
+    @apply sticky top-[var(--c2k-sticky-below-header)] z-20 -mx-4 mb-4 px-4 py-3 backdrop-blur-md sm:mx-0 sm:px-0;
+    /* Opacity modifiers cannot @apply on CSS-variable colors; use color-mix instead. */
+    background-color: color-mix(in srgb, var(--dc-surface) 95%, transparent);
+  }
+  .c2k-community-shell-tabs__list {
+    @apply inline-flex flex-wrap gap-1 rounded-2xl border border-dc-border bg-dc-elevated-muted/80 p-1 shadow-[var(--dc-tab-shell-shadow)] overflow-x-auto c2k-no-scrollbar;
+  }
+  .c2k-community-tab {
+    @apply flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-medium min-h-11 transition-all;
+  }
+  .c2k-community-tab--active {
+    @apply bg-dc-accent text-dc-accent-foreground shadow-[var(--dc-tab-active-shadow)];
+  }
+  .c2k-community-tab--inactive {
+    @apply text-dc-text-muted hover:text-dc-text hover:bg-dc-elevated-muted;
+  }
+
+  .organizer-shell {
+    @apply min-h-[calc(100vh-4rem)] text-[13px] leading-snug;
+  }
+  .organizer-shell .organizer-panel {
+    display: block;
+    grid-template-columns: unset;
+    align-items: stretch;
+    gap: unset;
+  }
+  .organizer-panel {
+    background: var(--organizer-panel-bg);
+    padding: var(--organizer-panel-padding-y) var(--organizer-panel-padding-x);
+    @apply rounded-xl border border-white/15;
+  }
+  .organizer-status-draft {
+    color: var(--organizer-status-draft);
+  }
+  .organizer-status-published {
+    color: var(--organizer-status-published);
+  }
+  .organizer-status-stale {
+    color: var(--organizer-status-stale);
+  }
+}

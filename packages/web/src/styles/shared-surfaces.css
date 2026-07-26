@@ -1,0 +1,187 @@
+/**
+ * Cross-breakpoint surface primitives (Sprint 1 + Sprint 3).
+ * Card interaction, empty states, identity heroes, feed motion — all viewports.
+ * Desktop-only depth polish lives in desktop-surfaces.css (lg+).
+ * Mobile-only scroll/snap utilities live in mobile-polish.css.
+ */
+
+.c2k-profile-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.c2k-profile-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 85% 55% at 50% -15%,
+    color-mix(in srgb, var(--dc-accent) 14%, transparent),
+    transparent 68%
+  );
+  pointer-events: none;
+}
+
+.c2k-community-hero-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--dc-bg) 92%, transparent) 0%,
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+.c2k-org-cover-fallback {
+  background-image:
+    radial-gradient(ellipse 80% 60% at 20% 20%, color-mix(in srgb, var(--dc-accent) 22%, transparent), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 30%, color-mix(in srgb, var(--dc-accent) 12%, transparent), transparent 50%);
+}
+
+.c2k-vendor-cover-fallback {
+  background-image:
+    radial-gradient(ellipse 70% 55% at 25% 20%, color-mix(in srgb, var(--dc-accent) 18%, transparent), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 80% 70%, color-mix(in srgb, var(--dc-accent) 8%, transparent), transparent 50%);
+}
+
+.dc-card-polish {
+  transition:
+    border-color var(--dc-premium-duration, 180ms) var(--dc-premium-ease, ease),
+    box-shadow var(--dc-premium-duration, 180ms) var(--dc-premium-ease, ease),
+    transform 120ms var(--dc-premium-ease, ease),
+    background-color var(--dc-premium-duration, 180ms) var(--dc-premium-ease, ease);
+}
+
+/* Tablet/handoff hover — desktop lg+ override in desktop-surfaces.css */
+@media (max-width: 1023px) {
+  @media (hover: hover) and (pointer: fine) {
+    .dc-card-polish:hover {
+      border-color: var(--dc-border-card-hover, color-mix(in srgb, var(--dc-accent) 22%, var(--dc-border)));
+      box-shadow: var(--dc-shadow-hover, var(--dc-shadow-panel, 0 8px 32px rgba(0, 0, 0, 0.35)));
+    }
+  }
+}
+
+.dc-card-polish:active {
+  transform: scale(0.996);
+}
+
+.c2k-event-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--dc-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--dc-elevated-solid) 92%, transparent);
+  backdrop-filter: blur(8px);
+  padding: 0.375rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--dc-text);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/** Event list / row thumbnails — fit logos without cropping. */
+.c2k-event-list-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--dc-surface-muted);
+}
+
+.c2k-event-list-thumb img {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0.5rem;
+}
+
+.c2k-empty-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.c2k-empty-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 45% at 50% 0%,
+    color-mix(in srgb, var(--dc-accent) 10%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.c2k-empty-icon-ring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--dc-accent) 25%, var(--dc-border));
+  background: color-mix(in srgb, var(--dc-accent) 8%, var(--dc-elevated-solid));
+  color: var(--dc-accent);
+}
+
+.c2k-empty-state-compact .c2k-empty-icon-ring {
+  margin-bottom: 0.75rem;
+}
+
+.c2k-empty-state-compact {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .c2k-empty-state-compact {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+}
+
+.dc-feed-stagger > article {
+  animation: dc-panel-in 0.28s ease-out backwards;
+}
+
+.dc-feed-stagger > article:nth-child(1) {
+  animation-delay: 0ms;
+}
+.dc-feed-stagger > article:nth-child(2) {
+  animation-delay: 35ms;
+}
+.dc-feed-stagger > article:nth-child(3) {
+  animation-delay: 70ms;
+}
+.dc-feed-stagger > article:nth-child(4) {
+  animation-delay: 105ms;
+}
+.dc-feed-stagger > article:nth-child(n + 5) {
+  animation-delay: 140ms;
+}
+
+.c2k-avatar-ring {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--dc-accent) 35%, transparent),
+    0 12px 32px -16px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-card-polish {
+    transition: none;
+  }
+
+  .dc-card-polish:active {
+    transform: none;
+  }
+
+  .dc-feed-stagger > article {
+    animation: none !important;
+  }
+}

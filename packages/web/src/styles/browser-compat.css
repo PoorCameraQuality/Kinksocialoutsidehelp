@@ -1,0 +1,104 @@
+/**
+ * Cross-browser fixes for mobile WebViews (Messenger, Samsung Internet, etc.).
+ * Classes are set on <html> via applyBrowserDocumentClasses() and inline boot script.
+ */
+
+html.browser-env-ready {
+  /* Stable viewport height chain for WebViews that mishandle 100vh / dvh */
+  min-height: 100%;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
+html.browser-env-ready body {
+  min-height: 100%;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
+/* Prevent iOS / Samsung zoom-on-focus for form controls */
+html.browser-ios input,
+html.browser-ios select,
+html.browser-ios textarea,
+html.browser-android input,
+html.browser-android select,
+html.browser-android textarea,
+html.browser-samsung input,
+html.browser-samsung select,
+html.browser-samsung textarea {
+  font-size: max(16px, 1em);
+}
+
+html.browser-in-app input,
+html.browser-in-app select,
+html.browser-in-app textarea,
+html.browser-in-app button {
+  touch-action: manipulation;
+}
+
+/* In-app browsers often clip position:fixed bottom bars */
+html.browser-in-app {
+  --c2k-in-app-composer-extra: 0.5rem;
+}
+
+html.browser-in-app .c2k-fixed-composer {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  padding-bottom: max(
+    env(safe-area-inset-bottom, 0px),
+    var(--c2k-in-app-composer-extra, 0px)
+  );
+}
+
+html.browser-in-app .safe-area-pb {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.625rem);
+}
+
+/* Samsung Internet: prefer svh for sheet heights when dvh jumps */
+html.browser-samsung {
+  --c2k-mobile-sheet-max-height: min(
+    85svh,
+    calc(100svh - var(--c2k-header-h) - var(--c2k-bottom-nav-total-h) - 1rem)
+  );
+  --c2k-mobile-viewport-fill-h: calc(
+    100svh - var(--c2k-sticky-below-header) - var(--c2k-bottom-nav-clearance)
+  );
+}
+
+/* Reduce rubber-band scroll bleed in embedded threads */
+html.browser-in-app .c2k-thread-scroll {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tap targets: in-app WebViews sometimes miss hit areas on small controls */
+html.browser-in-app .c2k-touch-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+html.browser-in-app .c2k-in-app-banner-spacer {
+  height: 0;
+}
+
+html.browser-in-app:has(.c2k-in-app-banner) .c2k-in-app-banner-spacer {
+  height: 3.25rem;
+}
+
+html.browser-in-app:has(.c2k-in-app-banner) {
+  --c2k-in-app-banner-h: 3.25rem;
+  --c2k-sticky-below-header: calc(
+    var(--c2k-header-h) + var(--c2k-in-app-banner-h) + env(safe-area-inset-top, 0px)
+  );
+}
+
+html.browser-in-app:has(.c2k-in-app-banner) .dc-header-chrome {
+  top: calc(var(--c2k-in-app-banner-h) + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 1024px) {
+  html.browser-in-app:has(.c2k-in-app-banner) .c2k-in-app-banner-spacer {
+    height: 0;
+  }
+}

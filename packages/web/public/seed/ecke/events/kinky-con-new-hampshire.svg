@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="Kinky Con">
+  <defs>
+    <linearGradient id="kcnh" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#134e4a"/>
+      <stop offset="100%" stop-color="#042f2e"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="16" fill="url(#kcnh)"/>
+  <text x="100" y="88" text-anchor="middle" fill="#ccfbf1" font-family="Georgia,serif" font-size="26" font-weight="bold">Kinky Con</text>
+  <text x="100" y="118" text-anchor="middle" fill="#5eead4" font-family="system-ui,sans-serif" font-size="12">New Hampshire</text>
+</svg>
