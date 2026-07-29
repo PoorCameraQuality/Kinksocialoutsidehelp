@@ -131,7 +131,6 @@ Examples use placeholders only.
 
 | Name | Service | Purpose | Notes |
 |------|---------|---------|-------|
-| `DEMO_LOGIN_PASSWORD` | api | Seed demo password | Local/alpha only |
-| `E2E_DEMO_PASSWORD` | Playwright | E2E login | Must match demo password |
+| `DEMO_LOGIN_PASSWORD` | api | Demo seed login | Optional; defaults to `demo` (Playwright e2e is not in this snapshot) |
 
 When you add an env var in code, add it here and to the appropriate `.env*.example` file.

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping with Kink.social. This guide is for engineers working in the active monorepo.
+Thanks for helping with Kink.social. This guide is for engineers working in this review and contribution snapshot.
 
 ## Before you change code
 
@@ -35,10 +35,12 @@ Before opening a PR that changes behavior:
 ```bash
 npm run typecheck
 npm run lint
+npm run build
 npm run test
+npm run check:dc-classes -w web
 ```
 
-See [docs/TESTING.md](docs/TESTING.md).
+`npm run lint` covers the web package. See [docs/TESTING.md](docs/TESTING.md).
 
 ## Coding rules that matter here
 

@@ -38,7 +38,7 @@ Capability profiles (presenter, vendor, organizer roles) attach to that identity
 
 ## Retention
 
-Shared defaults live in `packages/shared/src/retention-policy.ts` (security logs, DMs, notifications, abandoned accounts, and related windows). Operator-facing inventory notes also live under `docs/privacy/`.
+Shared defaults live in `packages/shared/src/retention-policy.ts` (security logs, DMs, notifications, abandoned accounts, and related windows).
 
 When changing retention, update the shared constants, the worker sweep behavior, and this doc together.
 

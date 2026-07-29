@@ -20,11 +20,11 @@ File: `packages/api/src/auth/resolve-viewer.ts`, `routes/auth.ts`.
 
 | Capability | Gate |
 |------------|------|
-| Platform moderator | `C2K_PLATFORM_MODERATOR_USER_IDS` (UUID list) |
+| Platform moderator | `isPlatformModeratorUser`: `platform_staff` / site owners, plus bootstrap UUID list `C2K_PLATFORM_MODERATOR_USER_IDS` |
 | Email capture export | `C2K_PLATFORM_ADMIN_EMAILS` (email match on session) |
 | Identity ban | `identity_bans` checked on login/register |
 
-Files: `lib/platform-moderator.ts`, `lib/peer-reputation.ts`.
+Files: `lib/platform-moderator.ts`, `lib/platform-staff.ts`, `lib/peer-reputation.ts`.
 
 ---
 

@@ -19,7 +19,7 @@ Use the contact path published for the project (security contact on the live sit
 
 - Never commit real secrets, production `.env` files, private keys, or database dumps.
 - Never disable auth, privacy, upload validation, rate limiting, or moderation checks only to pass a test.
-- Production must keep `AUTH_ALLOW_FALLBACK=false`. The API refuses to start in production when fallback auth is enabled.
+- Do not set `AUTH_ALLOW_FALLBACK=true` in production. The API refuses to start when fallback auth is explicitly enabled.
 - Platform staff bootstrap env lists are not a substitute for full DB staff checks on privacy bypass paths.
 - Media quarantine and scan status must be respected on serve paths.
 - Report and moderation P0 reasons need fast human attention. Do not treat them as local-only dismissals.
@@ -41,4 +41,4 @@ Engineers reviewing changes should pay extra attention to:
 
 ## Supported versions
 
-Security fixes target the current mainline application in `packages/web`, `packages/api`, and `packages/shared`. Historical trees under `legacy/`, root `src/`, and `vendor/` are not supported as deployable apps.
+Security fixes target the application in `packages/web`, `packages/api`, and `packages/shared`. Those are the only supported app trees in this repository.

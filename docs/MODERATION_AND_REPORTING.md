@@ -38,4 +38,4 @@ Orgs, groups, events, and conventions can have scoped tools. Platform T&S remain
 
 ## Operator playbooks
 
-Short operator docs remain under `docs/trust-safety/` (minor safety, NCMEC manual reporting, policy coverage matrix). Keep those accurate when legal process changes.
+Detailed operator playbooks live in the private development workspace. This slice keeps the engineer-facing module map above.

@@ -37,7 +37,10 @@ Minimum for a working pilot:
 | `DATABASE_URL` | Production Postgres |
 | `REDIS_URL` | Production Redis |
 | `AUTH_SECRET`, `COOKIE_SECRET` | Strong random values |
-| `AUTH_ALLOW_FALLBACK=false` | Required. API refuses startup if true in production |
+| `AUTH_ALLOW_FALLBACK` | Must not be `true` in production (API exits if explicitly enabled) |
+| `C2K_FIELD_ENCRYPTION_KEY` | Required when DB mode is on |
+| `EMAIL_LOOKUP_PEPPER` | Required when DB mode is on |
+| `EXTERNAL_STORE_SECRET` | Required in production for encrypted storefront secrets |
 | `CORS_ORIGIN` | Public web origin |
 | `C2K_PUBLIC_WEB_URL` | Canonical site URL, no trailing slash |
 | `DOMAIN` | Hostname for Caddy TLS |
@@ -94,20 +97,9 @@ Local-only:
 npm run db:prepare
 ```
 
-## GitHub Actions deploy
+## CI in this snapshot
 
-`.github/workflows/deploy.yml` is manual dispatch. Pushes to `main` do not auto-deploy.
-
-Flow in short:
-
-1. Operator dispatches Deploy.
-2. Verify job runs CI.
-3. Protected production environment approval.
-4. Release tarball syncs via the unprivileged deploy user (private ops tooling).
-5. Host scripts run migrate, build, up, and health checks.
-6. Recent releases and code snapshots are retained for rollback.
-
-Never runs `db:seed` or `db:prepare`.
+This slice ships `.github/workflows/ci.yml` (typecheck, build, unit tests, DB smokes). The private deploy workflow and VPS patch scripts are not included. Production release steps still follow the Compose + migrate path above; never run `db:seed` or `db:prepare` against production.
 
 ## Health checks
 

@@ -2,9 +2,15 @@
 
 Controlled public alpha for [kink.social](https://kink.social). Organizer-first community tools for events, conventions, organizations, and groups, plus member social surfaces.
 
-Public brand: **Kink Social**. Internal codename: **C2K**.
+Public brand: **Kink Social**. Internal codename: **C2K**. Root npm package name remains `coast-to-coast-kink`.
 
 This is not a full launch. Registration may be open. Bugs and demo content are expected.
+
+## What this repository is
+
+This GitHub tree is a **review and contribution slice** of the product: app packages, local/prod Compose shape, unit tests, and engineer docs. It is not the full private development workspace.
+
+Omitted on purpose: Playwright e2e, private VPS/ops scripts, Storybook, demo seed images, agent tooling, and historical planning docs. See [docs/REMOVED_FILES_SUMMARY.md](docs/REMOVED_FILES_SUMMARY.md).
 
 ## Stack
 
@@ -13,7 +19,7 @@ This is not a full launch. Registration may be open. Bugs and demo content are e
 | Web | `packages/web` | Vite + React SPA |
 | API | `packages/api` | Fastify HTTP API, Drizzle, BullMQ worker entry |
 | Shared | `packages/shared` | Types, validation, privacy and policy helpers |
-| Local infra | `docker-compose.dev.yml` | Postgres, Redis, MinIO, Mailpit |
+| Local infra | `docker-compose.dev.yml` | Postgres, Redis, MinIO, Mailpit (optional ClamAV profile) |
 | Production | `docker-compose.prod.yml` + `docker-compose.prod.vps.yml` | VPS stack with Caddy in front of web and API |
 
 ## Repository layout
@@ -23,15 +29,13 @@ packages/web      Canonical UI
 packages/api      API, schema, worker
 packages/shared   Shared contracts
 docker/           Dockerfiles and nginx SPA config
-scripts/          Minimal local DB helpers (prepare / migrate)
+scripts/          Local DB helpers (prepare / migrate)
 docs/             Engineering documentation
 ```
 
-This GitHub tree is a **review slice** of the product. Playwright e2e, private ops scripts, and historical trees are not included. See [docs/REMOVED_FILES_SUMMARY.md](docs/REMOVED_FILES_SUMMARY.md).
-
 ## Requirements
 
-- **Node 20** for the supported install and test path (CI uses Node 20)
+- **Node 20** for the supported install and test path (CI uses Node 20; `engines` allows `>=18`)
 - npm (workspace root uses npm scripts and `package-lock.json`)
 - Docker and Docker Compose for local Postgres, Redis, MinIO, and Mailpit
 
@@ -45,13 +49,15 @@ npm run db:prepare
 npm run dev
 ```
 
+Committed `.env.development` supplies local defaults (Postgres on `127.0.0.1:6432`, MinIO, Mailpit SMTP).
+
 | URL | Purpose |
 |-----|---------|
 | http://localhost:5173 | Web |
 | http://localhost:3001/api/health/ready | API readiness |
 | http://127.0.0.1:8025 | Mailpit UI (local mail capture) |
 
-Demo login after seed: username `RopeDreamer`, password from `DEMO_LOGIN_PASSWORD` in `.env.development` (default `demo`).
+Demo login after seed: username `RopeDreamer`. Password is `DEMO_LOGIN_PASSWORD` if set in the environment, otherwise **`demo`**.
 
 See [Local development](docs/LOCAL_DEVELOPMENT.md).
 
@@ -60,24 +66,27 @@ See [Local development](docs/LOCAL_DEVELOPMENT.md).
 ```bash
 npm run dev           # Vite :5173 + API :3001
 npm run typecheck
-npm run lint
+npm run lint          # web ESLint
 npm run build
-npm run test          # API unit tests (includes auth / privacy helpers)
+npm run test          # @c2k/api test runner (includes shared + selected web unit tests)
+npm run check:dc-classes -w web   # CI also runs this
 ```
 
-Start the worker separately when you need queues. See [Local development](docs/LOCAL_DEVELOPMENT.md) (`npm run start:worker -w @c2k/api` after an API build).
+Optional DB-backed API tests (Docker Postgres + Redis): `npm run test:db -w @c2k/api`. See [Testing](docs/TESTING.md).
+
+For BullMQ mail, publish, and sweeps locally: build the API, then `npm run start:worker -w @c2k/api`.
 
 ## Production deployment overview
 
 Supported path today: **VPS + Docker Compose + Caddy**.
 
 1. Copy `.env.production.example` to `.env.production` on the host (never commit secrets).
-2. Run `npm run db:migrate-prod` against production with Node 20.
-3. Bring up the compose stack (`docker-compose.prod.yml`, plus the VPS overlay when used).
+2. Run migrations with Node 20 and a host-reachable `DATABASE_URL` (Compose hostname `postgres` only works inside the network).
+3. Bring up `docker-compose.prod.yml`, plus `docker-compose.prod.vps.yml` when using the VPS overlay (MinIO/mail extras).
+
+This slice includes CI (`.github/workflows/ci.yml`) but not the private deploy workflow or VPS patch scripts. See [Deployment](docs/DEPLOYMENT.md).
 
 Do not run seed or database clear commands against production.
-
-Details: [Deployment](docs/DEPLOYMENT.md).
 
 ## Documentation
 
@@ -85,6 +94,8 @@ Details: [Deployment](docs/DEPLOYMENT.md).
 |-----|-------|
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute safely |
 | [SECURITY.md](SECURITY.md) | Reporting security issues |
+| [docs/ENGINEERING_REVIEW_CHECKLIST.md](docs/ENGINEERING_REVIEW_CHECKLIST.md) | Reviewer checklist |
+| [docs/FEATURE_REGISTRY.md](docs/FEATURE_REGISTRY.md) | Routes and feature map |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Runtime architecture |
 | [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) | Local setup |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | VPS deploy |
@@ -99,6 +110,7 @@ Details: [Deployment](docs/DEPLOYMENT.md).
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Ops and observability |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common failures |
 | [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) | Current limits |
+| [docs/REMOVED_FILES_SUMMARY.md](docs/REMOVED_FILES_SUMMARY.md) | What this slice omits |
 
 Index: [docs/README.md](docs/README.md).
 
@@ -108,7 +120,7 @@ Public controlled alpha. Organizer Event Systems, orgs, groups, media, moderatio
 
 ## Known major limitations
 
-- Demo and seed content exist for local and alpha testing.
+- Demo and seed content exist for local and alpha testing. This slice omits demo seed image binaries, so some catalog images may 404 locally.
 - Some route modules still use thin local auth wrappers. New mutating routes should use `requireAuthenticatedDbUser`.
 - Relationship words (`friends`, `connections`, `followers`) are not always the same graph edge. See the glossary.
 - See [Known limitations](docs/KNOWN_LIMITATIONS.md) for more.

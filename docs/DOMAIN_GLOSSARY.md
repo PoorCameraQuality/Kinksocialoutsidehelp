@@ -69,7 +69,7 @@ Preferred product word for mutual relationship-gated content.
 Legacy stored settings value. Runtime gates treat it as accepted mutual connections for profile fields and DMs. Do not rename without a migration.
 
 ### Followers / following
-One-way follow graph. Media enum `FOLLOWERS` is gated by accepted connections on current asset paths. Feed `connections_only` currently uses the follow edge.
+One-way follow graph. Media enum `FOLLOWERS` is gated by accepted connections on current asset paths. Feed `connections_only` is surface-specific (following feed vs discovery); do not assume one graph edge everywhere.
 
 ### Block
 Member safety action that must stay respected in notifications and social delivery.

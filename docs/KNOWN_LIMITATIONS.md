@@ -17,7 +17,7 @@ Current product and engineering limits that outside engineers should know.
 
 - `friends`, `connections`, and `followers` are not one graph.
 - Media `FOLLOWERS` currently means accepted connections in asset/item gates.
-- Feed `connections_only` currently uses the follow edge.
+- Feed `connections_only` is surface-specific (following feed audience vs discovery mutual connections).
 
 ## Large modules
 
@@ -33,8 +33,7 @@ Prefer extending helpers over growing unrelated logic in those files.
 ## Deployment
 
 - Documented production path is VPS Compose + Caddy.
-- Kubernetes files may exist. They are not the supported default in current engineer docs.
-- Both npm and pnpm lockfiles may exist in the full archive. Engineer workflows documented here use npm.
+- This snapshot omits Kubernetes manifests, pnpm lockfiles, and the private deploy workflow. Use npm + Compose as documented here.
 
 ## ECKE
 

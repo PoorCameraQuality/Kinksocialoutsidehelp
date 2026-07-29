@@ -81,7 +81,7 @@ Important mismatches to remember:
 
 - Settings value `friends` often means accepted mutual connections.
 - Media enum `FOLLOWERS` is gated by accepted connections in current asset paths, not one-way follow.
-- Feed activity `connections_only` currently uses the follow edge (`viewerFollowsActor`).
+- Feed activity `connections_only` is surface-specific. The following feed builds an audience from accepted connections plus one-way follows (the set is passed into a helper still named `viewerFollowsActor`). People/discovery post counts that use `connections_only` require mutual connections.
 
 Details: [PRIVACY_AND_VISIBILITY.md](./PRIVACY_AND_VISIBILITY.md).
 

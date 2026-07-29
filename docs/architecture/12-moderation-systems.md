@@ -4,17 +4,15 @@
 
 Trust & safety spans **user reports**, **case queues**, **async jobs**, **gallery approval**, **profile review flags**, and **platform staff tools** — not a single “moderation service.”
 
-**T&S program (post T&S-1+ detail):**
+**T&S program detail:**
 
 | Doc | Role |
 |-----|------|
 | [ADR-004-multi-tier-moderation.md](./ADR-004-multi-tier-moderation.md) | Tier model, rule-of-two, scope vs identity bans |
-| [../audits/trust-and-safety/T&S-IMPLEMENTATION.md](../audits/trust-and-safety/T&S-IMPLEMENTATION.md) | Shipped waves, routes, verification |
-| [../audits/trust-and-safety/MODERATOR_WORKFLOW.md](../audits/trust-and-safety/MODERATOR_WORKFLOW.md) | Operator playbook, queues, enforcement matrix |
-| [../audits/trust-and-safety/POLICY_TAXONOMY.md](../audits/trust-and-safety/POLICY_TAXONOMY.md) | Enum mirror (`moderation-types.ts` in `@c2k/shared`) |
-| [../MODERATION_WIREFRAME.md](../MODERATION_WIREFRAME.md) | Team walkthrough of shipped console |
+| [../MODERATION_AND_REPORTING.md](../MODERATION_AND_REPORTING.md) | Engineer-facing reports and case map |
+| `@c2k/shared` `moderation-types.ts` | Policy reason enums |
 
-This doc: runtime map (surfaces, route prefixes, org vs platform split) only.
+This doc: runtime map (surfaces, route prefixes, org vs platform split) only. Operator playbooks live in the private workspace.
 
 ---
 
@@ -49,7 +47,7 @@ This doc: runtime map (surfaces, route prefixes, org vs platform split) only.
 
 Member UI: `ContentReportDialog` / `TsReportModal`; status in Settings → Support & reports.
 
-Surface wiring inventory → [UGC_REPORT_SURFACE_AUDIT.md](../audits/trust-and-safety/UGC_REPORT_SURFACE_AUDIT.md).
+Surface wiring: search `ContentReportDialog` / `TsReportModal` in `packages/web` and report routes in `packages/api`.
 
 ---
 
@@ -80,7 +78,7 @@ Surface wiring inventory → [UGC_REPORT_SURFACE_AUDIT.md](../audits/trust-and-s
 - `moderation-trust-summary.ts` — per-user trust summary + incident resolution
 - `moderation-profile-flags.ts` — peer-reputation flag queue
 
-**Policy:** [ADR-004-multi-tier-moderation.md](./ADR-004-multi-tier-moderation.md). **Ops:** [MODERATOR_WORKFLOW.md](../audits/trust-and-safety/MODERATOR_WORKFLOW.md). **UI:** `/moderation/*` web console.
+**Policy:** [ADR-004-multi-tier-moderation.md](./ADR-004-multi-tier-moderation.md). **UI:** `/moderation/*` web console.
 
 **Tables:** `platform_staff`, `moderation_cases`, `moderation_reports`, `moderation_queue_items`, `moderation_events`, `content_snapshots`, `moderation_actions` + approvals, legacy `reports`, `moderation_jobs`.
 

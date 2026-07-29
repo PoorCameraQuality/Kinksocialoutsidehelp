@@ -63,7 +63,8 @@ Scope strings are matched with strict UUID regex (`ws-subscribe-auth.ts`).
 
 - Signed-in org **member**
 - Org `feature_flags.chatEnabled`
-- Channel belongs to org
+- Channel belongs to the org
+- Viewer passes `viewerCanAccessOrgChannel` (includes convention-attendee gating when the channel requires a convention)
 - User **not** `scope_banned` on the org (`isUserScopeBanned('organization', orgId, userId)`)
 
 **Events:**

@@ -35,7 +35,7 @@ Rating/status gate helper: `passesMediaRatingAndStatusGate`. Scope helpers decid
 | Local | MinIO via `docker-compose.dev.yml` |
 | Production | External S3-compatible bucket (`S3_*` env). Compose does not ship MinIO. |
 
-Optional imgproxy delivery is documented in `MEDIA_IMAGE_PROXY.md` and controlled by `IMGPROXY_*` env vars.
+Optional imgproxy delivery is controlled by `IMGPROXY_*` env vars (see `.env.production.example`).
 
 ## Alpha kill switches
 

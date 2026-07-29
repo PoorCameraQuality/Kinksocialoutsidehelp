@@ -65,7 +65,7 @@ npm run dev
 | http://localhost:3001/api/health/ready | API ready check |
 | http://127.0.0.1:8025 | Mailpit |
 
-Demo user after seed: `RopeDreamer` / password from `DEMO_LOGIN_PASSWORD` (default `demo`).
+Demo user after seed: `RopeDreamer`. Password is `DEMO_LOGIN_PASSWORD` if set, otherwise `demo`.
 
 ## Workers
 

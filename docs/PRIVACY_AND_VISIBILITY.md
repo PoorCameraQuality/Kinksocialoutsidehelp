@@ -21,7 +21,7 @@ These are easy to get wrong:
 |--------------------------|-------------------------|
 | `friends` on profile/DM settings | Accepted mutual connections |
 | Media `FOLLOWERS` | Accepted mutual connections on asset/item paths |
-| Feed `connections_only` | Follow edge via `viewerFollowsActor` today |
+| Feed `connections_only` | Surface-specific: following feed uses connections ∪ follows; discovery post counts use mutual connections |
 
 Do not rename persisted enum values without a migration plan.
 
@@ -57,4 +57,4 @@ Block relationships must stay respected in notification and social delivery path
 
 ## Legal and data minimization
 
-Operator notes for retention and legal requests live under `docs/privacy/` and `docs/LEGAL_REQUEST_AND_DATA_MINIMIZATION.md`. Engineer-facing summary: minimize what leaves the API, keep retention enforceable in workers, and protect privileged admin reveals behind staff role plus step-up where required.
+Engineer-facing summary: minimize what leaves the API, keep retention enforceable in workers (`packages/shared/src/retention-policy.ts`), and protect privileged admin reveals behind staff role plus step-up where required.
