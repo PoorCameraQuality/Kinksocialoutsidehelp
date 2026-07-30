@@ -1,71 +1,69 @@
 # Local development
 
-## Requirements
+How I run this on my machine. If something here is wrong, the compose file and `.env.development` win.
+
+## What you need
 
 - Node 20
 - npm
-- Docker and Docker Compose
+- Docker + Docker Compose
 
-## Start infrastructure
+## Start the containers
 
 ```bash
-# Local development
 docker compose -f docker-compose.dev.yml up -d
 ```
 
-Typical local services:
+Usual local services:
 
-| Service | Common local access |
-|---------|---------------------|
-| Postgres | `127.0.0.1:6432` (see compose and `.env.development`) |
+| Service | Where |
+|---------|-------|
+| Postgres | `127.0.0.1:6432` (see compose / `.env.development`) |
 | Redis | From `REDIS_URL` in `.env.development` |
-| MinIO | S3-compatible local storage |
-| Mailpit | SMTP capture, UI often on `http://127.0.0.1:8025` |
+| MinIO | Local S3 |
+| Mailpit | Caught mail UI, usually `http://127.0.0.1:8025` |
 
-## Install and prepare the database
+## Install + DB
 
 ```bash
-# Local development
 npm install
 npm run db:prepare
 ```
 
-`db:prepare` waits for Postgres, runs Drizzle push, incremental migrations, seed, and preview attendee parity. It is blocked in production environments.
+`db:prepare` waits for Postgres, pushes schema, runs incremental migrations, seeds, and a preview attendee parity step. It refuses to run against production-looking env.
 
-Optional location seed:
+Optional places seed:
 
 ```bash
 npm run db:seed:locations -w @c2k/api
 ```
 
-## Environment files
+## Env files
 
-Local defaults live in `.env.development`. Do not commit real production secrets.
+`.env.development` has the local defaults. Don't commit real prod secrets.
 
-Useful local mail setting:
+Mail locally:
 
 ```bash
-# Local development
 C2K_MAIL_TRANSPORT=smtp
-# point SMTP at Mailpit (see .env.development)
+# SMTP points at Mailpit — see .env.development
 ```
 
-Template fragments also appear in `.env.example`. Prefer `.env.development` for day-to-day local work.
+`.env.example` is a short template. Day to day I just use `.env.development`.
 
-## Run the app
+## Run it
 
 ```bash
-# Local development
 npm run dev
 ```
 
-| URL | Purpose |
-|-----|---------|
-| http://localhost:5173 | Web (Vite) |
-| http://localhost:3001/api/health/ready | API ready check |
+| URL | What |
+|-----|------|
+| http://localhost:5173 | Site |
+| http://localhost:3001/api/health/ready | API ready |
 | http://127.0.0.1:8025 | Mailpit |
 
-Demo user after seed: `RopeDreamer`. Password is `DEMO_LOGIN_PASSWORD` if set, otherwise `demo`.
+After seed: `RopeDreamer` / `demo` (or `DEMO_LOGIN_PASSWORD` if you set one).
 
 ## Workers
 

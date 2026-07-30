@@ -1,6 +1,8 @@
 # Architecture
 
-Kink.social is a monorepo with a Vite React SPA, a Fastify API, and a shared package. PostgreSQL holds application data. Redis backs BullMQ workers. Object storage holds uploads. Caddy terminates TLS in production.
+Short version: Vite React frontend, Fastify API, shared package, Postgres, Redis/BullMQ, object storage for uploads, Caddy in front in prod.
+
+This isn't a formal design doc. It's how the pieces actually fit today.
 
 ## Runtime picture
 

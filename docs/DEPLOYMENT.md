@@ -1,8 +1,8 @@
 # Deployment
 
-Supported production path: **VPS + Docker Compose + Caddy**.
+How I host this: a VPS, Docker Compose, and Caddy. Not k8s.
 
-Related files in this snapshot:
+Files that matter in this repo:
 
 - `docker-compose.prod.yml`
 - `docker-compose.prod.vps.yml`

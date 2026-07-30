@@ -1,31 +1,31 @@
-# What this snapshot leaves out
+# What's missing from this repo
 
-This repository is a **review and contribution slice**, not a dump of the private development workspace.
+I trimmed this tree on purpose so people could review the product without wading through my private workspace.
 
-## Included (essential)
+## In here
 
-| Area | Why |
-|------|-----|
-| `packages/web`, `packages/api`, `packages/shared` | The product |
-| `docker-compose.dev.yml` + env examples | Run locally |
-| `docker-compose.prod*.yml`, `Caddyfile`, `docker/` | Understand production shape |
-| Minimal root `scripts/` (`db:prepare`, migrate, wait-for-postgres) | Get a database up |
-| Unit tests inside packages | Review behavior with code |
-| Core engineer docs + ADRs + architecture series | Context for auth, privacy, media, events |
-| `.github/workflows/ci.yml` | How checks run |
+| Thing | Why |
+|-------|-----|
+| `packages/web`, `packages/api`, `packages/shared` | The actual app |
+| Dev / prod Compose + Caddy + Dockerfiles | How it runs |
+| Env examples | So you can boot it |
+| Small `scripts/` for db prepare / migrate | Local setup |
+| Unit tests next to the code | Check behavior |
+| Docs + ADRs | Context |
+| `.github/workflows/ci.yml` | Basic checks |
 
-## Intentionally omitted
+## Left out
 
-| Area | Why |
-|------|-----|
-| Playwright `e2e/` | UI automation suite; not required to review architecture or auth |
-| Demo seed image trees (`public/seed/*`) | ~20 MB of local alpha imagery; app and unit tests do not need them |
-| Storybook | Component workshop; not the review path |
-| Audit / verify / smoke / VPS patch scripts | Private ops and launch tooling |
-| Optional Compose overlays and deploy workflow | Not the default review path |
-| Agent / Cursor tooling, historical handoffs | Noise for reviewers |
-| Legacy trees (`src/`, `legacy/`, `vendor/`, `k8s/`) | Not the active app |
+| Thing | Why |
+|-------|-----|
+| Playwright e2e | Huge; not needed to read auth/privacy |
+| Demo seed image folders | Fat; app still runs without them |
+| Storybook | Not the review path |
+| Audit / smoke / VPS patch scripts | My ops junk |
+| Optional compose overlays / private deploy workflow | Not the default path |
+| Cursor / agent tooling, old handoffs | Noise |
+| Old trees (`src/`, `legacy/`, `vendor/`, `k8s/`) | Not the live app |
 
-Local demo seed may show broken image URLs for some catalog items. That does not affect auth, privacy, or API review.
+Local demo may show broken image URLs for some seed content. That's fine for reviewing code.
 
-If you need something omitted here, ask the maintainers.
+If you need something that isn't here, ask. Missing from this repo does not mean missing from the private project.
