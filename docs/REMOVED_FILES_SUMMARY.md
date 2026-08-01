@@ -24,6 +24,8 @@ I trimmed this tree on purpose so people could review the product without wading
 | Audit / smoke / VPS patch scripts | My ops junk |
 | Optional compose overlays / private deploy workflow | Not the default path |
 | Cursor / agent tooling, old handoffs | Noise |
+| Underscore session scripts (`scripts/_*.mjs`) | One-off VPS/deploy/probe tools; not the product |
+| ISO card review PNGs / `packages/api/tmp` | Local render previews only |
 | Old trees (`src/`, `legacy/`, `vendor/`, `k8s/`) | Not the live app |
 
 Local demo may show broken image URLs for some seed content. That's fine for reviewing code.

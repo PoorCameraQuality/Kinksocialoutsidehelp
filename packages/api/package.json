@@ -26,6 +26,7 @@
     "db:ensure-preview-categories": "tsx scripts/ensure-preview-registration-categories.ts",
     "db:ensure-preview-attendee-parity": "tsx scripts/ensure-preview-attendee-parity.ts",
     "db:ensure-brax-site-admin": "tsx scripts/ensure-brax-site-admin.ts",
+    "db:seed:play-compare": "tsx scripts/seed-play-space-compare-demo.ts",
     "db:ensure-test-admin": "tsx scripts/ensure-test-admin.ts",
     "mail:config-check": "tsx scripts/mail-config-check.ts",
     "db:seed:locations": "tsx src/db/seed-locations.ts",

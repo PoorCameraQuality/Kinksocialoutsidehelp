@@ -207,42 +207,50 @@ function mapApiToDisplayRow(row: ApiNotificationRow): MockNotification {
       href: groupId ? `/groups/${encodeURIComponent(groupId)}` : '/groups',
     }
   }
-  if (row.type === 'dancecard_booking_requested') {
-    const slug = typeof payload.conventionSlug === 'string' ? payload.conventionSlug : ''
-    return {
-      id: row.id,
-      kind: 'event',
-      title: 'Scene booking request',
-      body: 'Someone requested time on your dancecard.',
-      timeAgo: shortTime(row.createdAt),
-      createdAtIso,
-      read: !!row.readAt,
-      href: slug ? `/conventions/${encodeURIComponent(slug)}?tab=Dancecard` : '/events',
+  if (
+    row.type === 'dancecard_booking_requested' ||
+    row.type === 'dancecard_booking_accepted' ||
+    row.type === 'dancecard_booking_declined' ||
+    row.type === 'dancecard_scene_cancelled' ||
+    row.type === 'dancecard_reschedule_requested' ||
+    row.type === 'dancecard_reschedule_accepted' ||
+    row.type === 'dancecard_reschedule_declined'
+  ) {
+    const playSlug = typeof payload.playSpaceSlug === 'string' ? payload.playSpaceSlug : ''
+    const convSlug = typeof payload.conventionSlug === 'string' ? payload.conventionSlug : ''
+    const href =
+      typeof payload.href === 'string' && payload.href.startsWith('/') ?
+        payload.href
+      : playSlug ? `/play/${encodeURIComponent(playSlug)}`
+      : convSlug ? `/conventions/${encodeURIComponent(convSlug)}?tab=Dancecard`
+      : '/events'
+    const titles: Record<string, string> = {
+      dancecard_booking_requested: 'Scene booking request',
+      dancecard_booking_accepted: 'Booking accepted',
+      dancecard_booking_declined: 'Booking declined',
+      dancecard_scene_cancelled: 'Scene cancelled',
+      dancecard_reschedule_requested: 'Scene rescheduled',
+      dancecard_reschedule_accepted: 'Reschedule confirmed',
+      dancecard_reschedule_declined: 'Reschedule declined',
     }
-  }
-  if (row.type === 'dancecard_booking_accepted') {
-    const slug = typeof payload.conventionSlug === 'string' ? payload.conventionSlug : ''
-    return {
-      id: row.id,
-      kind: 'event',
-      title: 'Booking accepted',
-      body: 'Your scene booking was accepted.',
-      timeAgo: shortTime(row.createdAt),
-      createdAtIso,
-      read: !!row.readAt,
-      href: slug ? `/conventions/${encodeURIComponent(slug)}?tab=Dancecard` : '/events',
+    const bodies: Record<string, string> = {
+      dancecard_booking_requested: 'Someone requested time on your dancecard.',
+      dancecard_booking_accepted: 'Your scene booking was accepted.',
+      dancecard_booking_declined: 'Your scene request was declined.',
+      dancecard_scene_cancelled: 'A scene on your dancecard was cancelled.',
+      dancecard_reschedule_requested: 'A scene time was changed — open your dancecard.',
+      dancecard_reschedule_accepted: 'Your scene reschedule was confirmed.',
+      dancecard_reschedule_declined: 'A reschedule proposal was declined.',
     }
-  }
-  if (row.type === 'dancecard_booking_declined' || row.type === 'dancecard_scene_cancelled') {
     return {
       id: row.id,
       kind: 'event',
-      title: row.type === 'dancecard_booking_declined' ? 'Booking declined' : 'Scene cancelled',
-      body: 'Check your dancecard for details.',
+      title: titles[row.type] ?? 'Dancecard update',
+      body: bodies[row.type] ?? 'Check your dancecard for details.',
       timeAgo: shortTime(row.createdAt),
       createdAtIso,
       read: !!row.readAt,
-      href: '/events',
+      href,
     }
   }
   if (row.type === 'schedule_conflict_detected') {

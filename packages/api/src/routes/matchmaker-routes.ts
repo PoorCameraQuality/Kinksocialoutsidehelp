@@ -1,6 +1,11 @@
 import { and, eq, ne } from 'drizzle-orm'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
+import {
+  DEFAULT_PICKUP_PLAY_FORM_SCHEMA,
+  MATCHMAKER_DECK_MIN_SCORE,
+  buildMatchmakerDeckSummary,
+} from '@c2k/shared'
 import { getViewerUserId } from '../auth/viewer-user-id.js'
 import { resolveViewerFromRequest } from '../auth/resolve-viewer.js'
 import { db, schema } from '../db/index.js'
@@ -30,32 +35,6 @@ function requireUser(req: FastifyRequest, reply: FastifyReply): { userId: string
   return { userId }
 }
 
-/** Simple overlap score for JSON answers (numeric or string arrays). */
-function scoreAnswers(a: unknown, b: unknown): number {
-  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return 0
-  const ao = a as Record<string, unknown>
-  const bo = b as Record<string, unknown>
-  let score = 0
-  let keys = 0
-  for (const k of Object.keys(ao)) {
-    if (!(k in bo)) continue
-    keys++
-    const x = ao[k]
-    const y = bo[k]
-    if (Array.isArray(x) && Array.isArray(y)) {
-      const xs = new Set(x.map(String))
-      const overlap = y.filter((v) => xs.has(String(v))).length
-      score += overlap / Math.max(1, Math.max(xs.size, y.length))
-    } else if (typeof x === 'number' && typeof y === 'number') {
-      score += 1 - Math.min(1, Math.abs(x - y) / 5)
-    } else if (x === y) {
-      score += 1
-    }
-  }
-  if (keys === 0) return 0
-  return score / keys
-}
-
 function orderedPair(a: string, b: string): { userLow: string; userHigh: string } {
   return a < b ? { userLow: a, userHigh: b } : { userLow: b, userHigh: a }
 }
@@ -70,7 +49,13 @@ export async function registerMatchmakerRoutes(app: FastifyInstance) {
       .from(schema.eventMatchmakerSettings)
       .where(eq(schema.eventMatchmakerSettings.eventId, eventId))
       .limit(1)
-    return reply.send({ settings: settings ?? { eventId, enabled: false, formSchema: {} } })
+    return reply.send({
+      settings: settings ?? {
+        eventId,
+        enabled: false,
+        formSchema: { ...DEFAULT_PICKUP_PLAY_FORM_SCHEMA },
+      },
+    })
   })
 
   const settingsBody = z.object({
@@ -104,19 +89,23 @@ export async function registerMatchmakerRoutes(app: FastifyInstance) {
     }
     const parsed = settingsBody.safeParse(req.body)
     if (!parsed.success) return reply.status(400).send({ error: 'Invalid body' })
+    const formSchema = (parsed.data.formSchema ?? { ...DEFAULT_PICKUP_PLAY_FORM_SCHEMA }) as Record<
+      string,
+      unknown
+    >
     await db
       .insert(schema.eventMatchmakerSettings)
       .values({
         eventId,
         enabled: parsed.data.enabled,
-        formSchema: (parsed.data.formSchema ?? {}) as Record<string, unknown>,
+        formSchema,
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: schema.eventMatchmakerSettings.eventId,
         set: {
           enabled: parsed.data.enabled,
-          formSchema: (parsed.data.formSchema ?? {}) as Record<string, unknown>,
+          formSchema,
           updatedAt: new Date(),
         },
       })
@@ -278,14 +267,21 @@ export async function registerMatchmakerRoutes(app: FastifyInstance) {
     const swipedSet = new Set(swiped.map((s) => s.targetId))
     const deck = others
       .filter((o) => !swipedSet.has(o.userId))
-      .map((o) => ({
-        userId: o.userId,
-        username: o.username,
-        displayName: o.displayName,
-        avatarUrl: o.avatarUrl,
-        matchScore: scoreAnswers(me.answers, o.answers),
-      }))
+      .map((o) => {
+        const summary = buildMatchmakerDeckSummary(me.answers, o.answers)
+        return {
+          userId: o.userId,
+          username: o.username,
+          displayName: o.displayName,
+          avatarUrl: o.avatarUrl,
+          matchScore: summary.score,
+          fitBand: summary.fitBand,
+          reasons: summary.reasons,
+          sceneFeel: summary.sceneFeel,
+        }
+      })
+      .filter((o) => o.matchScore >= MATCHMAKER_DECK_MIN_SCORE)
       .sort((a, b) => b.matchScore - a.matchScore)
-    return reply.send({ items: deck.slice(0, 20) })
+    return reply.send({ items: deck.slice(0, 20), remainingCandidates: deck.length })
   })
 }

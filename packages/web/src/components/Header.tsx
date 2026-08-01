@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { siteConfig } from '@/config/site.config'
 import { isAppHomeMainNavActive } from '@/lib/app-home-nav'
+import SiteNavLink from '@/components/SiteNavLink'
+import { apexSiteHref, isDancecardHost } from '@/lib/dancecard-host'
 import { navLinkIsActive } from '@/lib/nav-link-active'
 import { useAuth } from '@/contexts/AuthContext'
 import CreateMenuDropdown from '@/components/CreateMenuDropdown'
@@ -330,15 +332,17 @@ export default function Header() {
     </>
   )
 
-  const logoLink = (
-    <Link
-      to={showAppNav ? '/home?tab=Local' : '/'}
-      className="flex min-h-11 shrink-0 items-center font-display text-lg font-bold tracking-tight text-dc-accent transition-colors hover:text-dc-accent-hover"
-      aria-label={siteConfig.brandWordmark}
-    >
-      <SiteWordmark />
-    </Link>
-  )
+  const logoHomePath = showAppNav ? '/home?tab=Local' : '/'
+  const logoClassName =
+    'flex min-h-11 shrink-0 items-center font-display text-lg font-bold tracking-tight text-dc-accent transition-colors hover:text-dc-accent-hover'
+  const logoLink =
+    isDancecardHost() ?
+      <a href={apexSiteHref(logoHomePath)} className={logoClassName} aria-label={siteConfig.brandWordmark}>
+        <SiteWordmark />
+      </a>
+    : <Link to={logoHomePath} className={logoClassName} aria-label={siteConfig.brandWordmark}>
+        <SiteWordmark />
+      </Link>
 
   const searchField = (
     <div className={marketingHeader ? 'relative w-full max-w-2xl' : 'relative w-full'}>
@@ -373,9 +377,9 @@ export default function Header() {
       {siteConfig.navLanding.map((link) => {
         const active = navLinkIsActive(pathname, link.href)
         return (
-          <Link
+          <SiteNavLink
             key={link.href}
-            to={link.href}
+            href={link.href}
             className={`min-h-10 whitespace-nowrap rounded-lg px-2.5 text-sm font-medium transition-colors ${
               active ?
                 'text-dc-accent'
@@ -383,11 +387,11 @@ export default function Header() {
             }`}
           >
             {link.label}
-          </Link>
+          </SiteNavLink>
         )
       })}
       <Link
-        to="/?login=1"
+        to="/login"
         className="min-h-10 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-dc-text-muted transition-colors hover:text-dc-text"
       >
         Login
@@ -410,7 +414,7 @@ export default function Header() {
               {logoLink}
               <div className="ml-auto flex items-center gap-0.5">
                 <Link
-                  to="/?login=1"
+                  to="/login"
                   className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-dc-text-muted hover:bg-dc-elevated-muted hover:text-dc-text"
                 >
                   Login
@@ -710,9 +714,9 @@ export default function Header() {
                 {siteConfig.appHomeMainNav.map((link) => {
                   const active = isAppHomeMainNavActive(link.href, pathname, search)
                   return (
-                    <Link
+                    <SiteNavLink
                       key={`${link.href}-${link.label}`}
-                      to={link.href}
+                      href={link.href}
                       className={`dc-browse-nav-link min-h-10 shrink-0 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors ${
                         active ?
                           'dc-browse-nav-link--active border-b-2 border-dc-accent bg-dc-accent-muted/50 text-dc-accent'
@@ -720,7 +724,7 @@ export default function Header() {
                       }`}
                     >
                       {link.label}
-                    </Link>
+                    </SiteNavLink>
                   )
                 })}
               </nav>
@@ -738,22 +742,22 @@ export default function Header() {
                     {siteConfig.navLanding.map((link) => {
                       const active = navLinkIsActive(pathname, link.href)
                       return (
-                        <Link
+                        <SiteNavLink
                           key={link.href}
-                          to={link.href}
+                          href={link.href}
                           className={`min-h-11 flex items-center px-4 rounded-lg text-sm font-medium ${
                             active ? 'text-dc-accent bg-dc-accent/10' : 'text-dc-text-muted hover:text-dc-text hover:bg-dc-elevated-muted'
                           }`}
                           onClick={() => setIsMenuOpen(false)}
                         >
                           {link.label}
-                        </Link>
+                        </SiteNavLink>
                       )
                     })}
                   </div>
                   <div className="mt-3 flex flex-col gap-2">
                     <Link
-                      to="/?login=1"
+                      to="/login"
                       className="min-h-11 flex items-center justify-center rounded-xl border border-dc-border px-4 text-sm font-medium text-dc-text"
                       onClick={() => setIsMenuOpen(false)}
                     >

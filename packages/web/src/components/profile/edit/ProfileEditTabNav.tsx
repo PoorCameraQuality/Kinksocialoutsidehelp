@@ -1,381 +1,210 @@
-import { useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 
-import { NavLink } from 'react-router-dom'
-
+import Dialog from '@/components/ui/Dialog'
 import type { StudioSectionStatus } from '@/lib/profile-studio/completion'
 
+export type ProfileEditTabId = 'overview' | 'photos' | 'identity' | 'interests' | 'presence'
 
-
-export type ProfileEditTabId =
-
+/** Legacy tab ids kept for redirect helpers and external deep links. */
+export type LegacyProfileEditTabId =
   | 'basics'
-
   | 'about'
-
-  | 'identity'
-
   | 'looking-for'
-
   | 'relationships'
-
-  | 'interests'
-
   | 'privacy'
-
   | 'links'
 
-
-
 export const PROFILE_EDIT_TABS: {
-
   id: ProfileEditTabId
-
   label: string
-
   description: string
-
   path: string
-
   mobileLabel?: string
-
 }[] = [
-
   {
-
-    id: 'basics',
-
-    label: 'Profile Story',
-
-    description: 'How people understand you at first glance.',
-
+    id: 'overview',
+    label: 'Overview',
+    description: 'First impression — name, location, and about you.',
     path: '/profile/edit',
-
-    mobileLabel: 'Story',
-
+    mobileLabel: 'Overview',
   },
-
   {
-
-    id: 'about',
-
-    label: 'About',
-
-    description: 'Your profile story — intro, tagline, and depth.',
-
-    path: '/profile/edit/about',
-
-    mobileLabel: 'About',
-
+    id: 'photos',
+    label: 'Photos',
+    description: 'Profile picture and curated gallery.',
+    path: '/profile/edit/photos',
+    mobileLabel: 'Photos',
   },
-
   {
-
     id: 'identity',
-
-    label: 'Identity & Community',
-
-    description: 'Roles, pronouns, experience, and community labels.',
-
+    label: 'Identity',
+    description: 'Roles, pronouns, orientations, and community labels.',
     path: '/profile/edit/identity',
-
     mobileLabel: 'Identity',
-
   },
-
   {
-
-    id: 'looking-for',
-
-    label: 'Looking For',
-
-    description: 'Friends, event companions, study partners, and more.',
-
-    path: '/profile/edit/looking-for',
-
-    mobileLabel: 'Looking for',
-
-  },
-
-  {
-
     id: 'interests',
-
-    label: 'Interests & Discovery',
-
+    label: 'Interests',
     description: 'Tags that help people find shared context.',
-
     path: '/profile/edit/interests',
-
     mobileLabel: 'Interests',
-
   },
-
   {
-
-    id: 'privacy',
-
-    label: 'Privacy & Visibility',
-
-    description: 'Public, logged-in, connections-only, or private.',
-
-    path: '/profile/edit/privacy',
-
-    mobileLabel: 'Privacy',
-
+    id: 'presence',
+    label: 'Presence',
+    description: 'Connection goals, relationships, links, and visibility.',
+    path: '/profile/edit/presence',
+    mobileLabel: 'Presence',
   },
-
-  {
-
-    id: 'links',
-
-    label: 'Links & Presence',
-
-    description: 'Websites, socials, and public references.',
-
-    path: '/profile/edit/links',
-
-    mobileLabel: 'Links',
-
-  },
-
-  {
-
-    id: 'relationships',
-
-    label: 'Connections & relationships',
-
-    description: 'Partnerships and D/s visibility.',
-
-    path: '/profile/edit/relationships',
-
-    mobileLabel: 'Relationships',
-
-  },
-
 ]
 
+export function resolveActiveProfileEditTab(pathname: string): ProfileEditTabId {
+  if (pathname === '/profile/edit' || pathname === '/profile/edit/') return 'overview'
+  const match = PROFILE_EDIT_TABS.find(
+    (tab) => tab.id !== 'overview' && pathname.startsWith(tab.path),
+  )
+  return match?.id ?? 'overview'
+}
 
+export function getProfileEditTab(id: ProfileEditTabId) {
+  return PROFILE_EDIT_TABS.find((tab) => tab.id === id)
+}
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-
-  `flex items-start gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors border ${
-
+  `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors border ${
     isActive ?
-
       'bg-dc-accent/10 text-dc-text border-dc-accent/30'
-
     : 'text-dc-muted hover:text-dc-text hover:bg-dc-elevated/60 border-transparent'
-
   }`
 
-
-
 function SectionBadge({ status }: { status?: StudioSectionStatus }) {
-
-  if (!status) return null
-
+  if (!status) {
+    return (
+      <span className="shrink-0 text-dc-muted text-xs" aria-hidden>
+        ○
+      </span>
+    )
+  }
   if (status.complete) {
-
     return (
-
-      <span className="mt-0.5 shrink-0 text-emerald-400 text-xs" aria-label="Section complete">
-
+      <span className="shrink-0 text-emerald-400 text-xs" aria-label="Section ready">
         ✓
-
       </span>
-
     )
-
   }
-
   if (status.progressLabel) {
-
     return (
-
-      <span className="mt-0.5 shrink-0 rounded-full bg-dc-accent/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-dc-accent">
-
-        {status.progressLabel}
-
+      <span className="shrink-0 text-dc-accent text-xs" aria-label="Section in progress">
+        ●
       </span>
-
     )
-
   }
-
   return (
-
-    <span className="mt-0.5 shrink-0 text-dc-muted text-xs" aria-hidden>
-
+    <span className="shrink-0 text-dc-muted text-xs" aria-hidden>
       ○
-
     </span>
-
   )
-
 }
 
-
-
-function activeTabIndex(pathname: string): number {
-
-  const idx = PROFILE_EDIT_TABS.findIndex((tab) =>
-
-    tab.id === 'basics' ? pathname === tab.path || pathname === `${tab.path}/` : pathname.startsWith(tab.path),
-
-  )
-
-  return idx >= 0 ? idx : 0
-
+function readySectionCount(sectionStatus?: Partial<Record<ProfileEditTabId, StudioSectionStatus>>): number {
+  return PROFILE_EDIT_TABS.filter((tab) => sectionStatus?.[tab.id]?.complete).length
 }
-
-
 
 type Props = {
-
   onboarding?: boolean
-
   sectionStatus?: Partial<Record<ProfileEditTabId, StudioSectionStatus>>
-
 }
 
-
+function NavItem({
+  tab,
+  sectionStatus,
+  end,
+}: {
+  tab: (typeof PROFILE_EDIT_TABS)[number]
+  sectionStatus?: Partial<Record<ProfileEditTabId, StudioSectionStatus>>
+  end?: boolean
+}) {
+  return (
+    <NavLink to={tab.path} end={end} className={linkClass}>
+      <SectionBadge status={sectionStatus?.[tab.id]} />
+      <span className="min-w-0 font-medium leading-snug">{tab.label}</span>
+    </NavLink>
+  )
+}
 
 export default function ProfileEditTabNav({ onboarding, sectionStatus }: Props) {
-
   const { pathname } = useLocation()
-
-
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   if (onboarding) return null
 
-
-
-  const activeIdx = activeTabIndex(pathname)
-
-  const activeTab = PROFILE_EDIT_TABS[activeIdx]
-
-
+  const activeId = resolveActiveProfileEditTab(pathname)
+  const activeTab = getProfileEditTab(activeId) ?? PROFILE_EDIT_TABS[0]
+  const activeIdx = PROFILE_EDIT_TABS.findIndex((tab) => tab.id === activeId)
+  const readyCount = readySectionCount(sectionStatus)
 
   return (
-
     <nav aria-label="Profile studio sections">
-
-      <p className="mb-3 hidden px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-dc-muted lg:block">
-
-        Profile studio
-
+      <p className="mb-1 hidden px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-dc-muted lg:block">
+        Profile Studio
+      </p>
+      <p className="mb-3 hidden px-1 text-xs text-dc-muted lg:block">
+        {readyCount} of {PROFILE_EDIT_TABS.length} sections ready
       </p>
 
       <ul className="hidden gap-1 lg:flex lg:flex-col">
-
         {PROFILE_EDIT_TABS.map((tab) => (
-
           <li key={tab.id}>
-
-            <NavLink to={tab.path} end={tab.id === 'basics'} className={linkClass}>
-
-              <SectionBadge status={sectionStatus?.[tab.id]} />
-
-              <span className="min-w-0">
-
-                <span className="block font-medium leading-snug">{tab.label}</span>
-
-                <span className="mt-0.5 block text-[11px] leading-snug text-dc-muted">{tab.description}</span>
-
-              </span>
-
-            </NavLink>
-
+            <NavItem tab={tab} sectionStatus={sectionStatus} end={tab.id === 'overview'} />
           </li>
-
         ))}
-
       </ul>
 
       <div className="lg:hidden">
-
-        <p className="mb-2 text-[11px] font-medium text-dc-muted">
-
-          {activeTab?.mobileLabel ?? activeTab?.label} · Section {activeIdx + 1} of {PROFILE_EDIT_TABS.length}
-
+        <p className="mb-1 text-[11px] font-medium text-dc-muted">
+          {activeTab.mobileLabel ?? activeTab.label} · Section {activeIdx + 1} of {PROFILE_EDIT_TABS.length}
         </p>
-
-        <div className="relative">
-
-          <div
-
-            className="c2k-no-scrollbar flex gap-2 overflow-x-auto pb-1 pl-0.5 pr-6"
-
-            role="tablist"
-
-            aria-label="Profile section"
-
-          >
-
-            {PROFILE_EDIT_TABS.map((tab) => (
-
-              <NavLink
-
-                key={tab.id}
-
-                to={tab.path}
-
-                end={tab.id === 'basics'}
-
-                className={({ isActive }) =>
-
-                  `inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${
-
-                    isActive ?
-
-                      'border-dc-accent bg-dc-accent text-dc-accent-foreground'
-
-                    : sectionStatus?.[tab.id]?.complete ?
-
-                      'border-emerald-500/35 bg-emerald-500/10 text-dc-text-muted'
-
-                    : 'border-dc-border bg-dc-elevated-solid text-dc-text-muted'
-
-                  }`
-
-                }
-
-              >
-
-                {sectionStatus?.[tab.id]?.complete ?
-
-                  <span className="text-[10px] text-emerald-400" aria-hidden>
-
-                    ✓
-
-                  </span>
-
-                : null}
-
-                {tab.mobileLabel ?? tab.label}
-
-              </NavLink>
-
-            ))}
-
-          </div>
-
-          <div
-
-            className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-dc-surface to-transparent"
-
-            aria-hidden
-
-          />
-
-        </div>
-
+        <p className="mb-2 text-[11px] text-dc-muted">
+          {readyCount} of {PROFILE_EDIT_TABS.length} sections ready
+        </p>
+        <button
+          type="button"
+          onClick={() => setSheetOpen(true)}
+          className="w-full min-h-11 rounded-xl border border-dc-border bg-dc-elevated/40 px-4 text-sm font-medium text-dc-text hover:bg-dc-elevated-muted"
+        >
+          Change section
+        </button>
       </div>
 
+      <Dialog
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title="Profile sections"
+        description={`${readyCount} of ${PROFILE_EDIT_TABS.length} sections ready`}
+        variant="sheet"
+        maxWidthClass="max-w-lg"
+      >
+        <ul className="divide-y divide-dc-border">
+          {PROFILE_EDIT_TABS.map((tab) => (
+            <li key={tab.id}>
+              <NavLink
+                to={tab.path}
+                end={tab.id === 'overview'}
+                onClick={() => setSheetOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-1 py-3.5 text-sm ${
+                    isActive ? 'text-dc-accent font-semibold' : 'text-dc-text hover:text-dc-accent'
+                  }`
+                }
+              >
+                <SectionBadge status={sectionStatus?.[tab.id]} />
+                <span>{tab.label}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </Dialog>
     </nav>
-
   )
-
 }
-
-

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { type ScheduleLayout } from '@/components/conventions/ConventionScheduleAgenda'
 import ConventionAttendeeHubShell from '@/components/conventions/ConventionAttendeeHubShell'
+import IsoBoardCardSummary from '@/components/profile/IsoBoardCardSummary'
 import DancecardOpsCard from '@/components/conventions/DancecardOpsCard'
 import ConventionDancecardOrganizerClient from '@/components/organizer/convention/ConventionDancecardOrganizerClient'
 import ConventionHero, {
@@ -233,12 +234,13 @@ const CONVENTION_MAIN_TABS: readonly MainTab[] = [
   'More',
 ] as const
 
-/** Visible peer tabs; Documents / ISO / Dancecard live under More. */
+/** Visible peer tabs; Documents / Dancecard live under More. ISO is primary again. */
 const CONVENTION_PRIMARY_TABS: readonly MainTab[] = [
   'Welcome',
   'Schedule',
   'Announcements',
   'Chat',
+  'ISO',
   'More',
 ]
 
@@ -345,6 +347,7 @@ export default function ConventionProgramPage() {
       username: string | null
       parentMessageId?: string | null
       reactions?: Record<string, number>
+      createdAt?: string | null
     }>
   >([])
   const [channelMessagesLoadError, setChannelMessagesLoadError] = useState<string | null>(null)
@@ -373,6 +376,7 @@ export default function ConventionProgramPage() {
     displayName: string | null
     avatarUrl: string | null
     body: string
+    structured?: unknown
     acceptDmsViaIso: boolean
     images: { sortOrder: number; url: string }[]
     staffRemoved: boolean
@@ -652,6 +656,7 @@ export default function ConventionProgramPage() {
             body: string
             username?: string
             parentMessageId?: string | null
+            createdAt?: string | Date | null
             sender?: { username?: string }
             reactions?: Record<string, number>
           }>
@@ -663,6 +668,10 @@ export default function ConventionProgramPage() {
             username: m.username ?? m.sender?.username ?? null,
             parentMessageId: m.parentMessageId,
             reactions: m.reactions,
+            createdAt:
+              m.createdAt == null ? null
+              : typeof m.createdAt === 'string' ? m.createdAt
+              : new Date(m.createdAt).toISOString(),
           })),
         )
       } catch {
@@ -695,6 +704,7 @@ export default function ConventionProgramPage() {
         body: string
         username?: string
         parentMessageId?: string | null
+        createdAt?: string | Date | null
         sender?: { username?: string }
         reactions?: Record<string, number>
       }>
@@ -706,6 +716,10 @@ export default function ConventionProgramPage() {
         username: m.username ?? m.sender?.username ?? null,
         parentMessageId: m.parentMessageId,
         reactions: m.reactions,
+        createdAt:
+          m.createdAt == null ? null
+          : typeof m.createdAt === 'string' ? m.createdAt
+          : new Date(m.createdAt).toISOString(),
       })),
     )
   }, [hubChannelsMode, conv?.organizationId, conv?.id, selectedChannelId, slug])
@@ -1666,7 +1680,7 @@ export default function ConventionProgramPage() {
                 </div>
               : null}
             </div>
-            <p className="mt-2 whitespace-pre-wrap text-sm text-dc-text-muted">{entry.body}</p>
+            <IsoBoardCardSummary body={entry.body} structured={entry.structured} />
             {entry.images.length > 0 ?
               <div className="mt-2 flex gap-0.5">
                 {entry.images.map((im) => (

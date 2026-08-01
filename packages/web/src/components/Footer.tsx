@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ECKE_KINK_SOCIAL_EXPLAINER_PATH, ECKE_URL } from '@c2k/shared'
 import { siteConfig } from '@/config/site.config'
+import SiteNavLink from '@/components/SiteNavLink'
 
 const Section = ({
   title,
@@ -22,12 +23,12 @@ const Section = ({
 
 const FooterLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <li>
-    <Link
-      to={href}
+    <SiteNavLink
+      href={href}
       className="text-dc-text-muted hover:text-dc-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dc-accent rounded"
     >
       {children}
-    </Link>
+    </SiteNavLink>
   </li>
 )
 

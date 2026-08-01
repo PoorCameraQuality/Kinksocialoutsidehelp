@@ -8,7 +8,9 @@ import { enrichAppearanceVars, buildDarkCommunityVars } from '@/lib/dancecard/ap
 export type DancecardAppearanceId =
   | 'parchment'
   | 'midnight-velvet'
+  | 'black-velvet'
   | 'midnight-brass'
+  | 'velvet-rose'
   | 'lifted-ink'
   | 'coastal-slate'
   | 'high-noon'
@@ -136,6 +138,104 @@ const MIDNIGHT_BRASS_VARS: Record<string, string> = buildDarkCommunityVars({
   mutedText: '#9ca3af',
 })
 
+/**
+ * Black Velvet — Dancecard product brand (charcoal page + sparse pink accent).
+ * Readability pass: warm cream secondary text (not mid-grey) + clear elevation ladder
+ * so cards/sections separate on small phone screens.
+ */
+const BLACK_VELVET_VARS: Record<string, string> = {
+  ...buildDarkCommunityVars({
+    background: '#0C0C10',
+    card: '#1C1C24',
+    cardHover: '#2A2A35',
+    input: '#15151C',
+    border: '#454552',
+    primary: '#E84D88',
+    text: '#FAF7F2',
+    bodyText: '#E8DFD4',
+    mutedText: '#C9BDB0',
+  }),
+  /* Page → well → card → nested control */
+  '--dc-surface-muted': '#14141A',
+  '--dc-elevated': '#1C1C24',
+  '--dc-elevated-solid': '#1C1C24',
+  '--dc-elevated-muted': '#26262F',
+  '--dc-elevated-hover': '#2A2A35',
+  '--dc-text-subtle': '#E84D88',
+  '--dc-accent': '#E84D88',
+  '--dc-accent-hover': '#F0639A',
+  '--dc-accent-muted': 'rgba(232, 77, 136, 0.16)',
+  '--dc-accent-border': 'rgba(232, 77, 136, 0.45)',
+  '--dc-accent-foreground': '#FFFFFF',
+  '--dc-border-subtle': '#3D3D4A',
+  '--dc-border-strong': '#5A5A6A',
+  '--dc-danger': '#F0717C',
+  '--dc-danger-muted': 'rgba(240, 113, 124, 0.12)',
+  '--dc-danger-border': 'rgba(240, 113, 124, 0.45)',
+  '--dc-slot-published': '#E84D88',
+  '--dc-compare-selected': 'rgba(232, 77, 136, 0.3)',
+  /* Soft depth without washing the stage pink */
+  '--dc-atmosphere-gradient-top': '#14141A',
+  '--dc-atmosphere-gradient-mid': '#0C0C10',
+  '--dc-atmosphere-gradient-bottom': '#0A0A0E',
+  '--dc-atmosphere-vignette': 'rgba(0, 0, 0, 0.4)',
+  '--dc-atmosphere-glow-a': 'rgba(232, 77, 136, 0.05)',
+  '--dc-atmosphere-glow-b': 'rgba(232, 77, 136, 0.03)',
+  '--dc-atmosphere-glow-c': 'rgba(0, 0, 0, 0)',
+  '--dc-atmosphere-orb-a': 'rgba(232, 77, 136, 0.04)',
+  '--dc-atmosphere-orb-b': 'rgba(0, 0, 0, 0)',
+  '--dc-atmosphere-orb-c': 'rgba(0, 0, 0, 0)',
+  '--dc-atmosphere-orb-opacity': '0.4',
+  '--dc-chip-bg': '#26262F',
+  '--dc-chip-hover-bg': '#2A2A35',
+  '--dc-tab-inactive-bg': '#15151C',
+  '--dc-tab-inactive-hover-bg': '#26262F',
+  '--dc-shadow-soft': '0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 28px rgba(0, 0, 0, 0.4)',
+  '--dc-shadow-panel': '0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 40px rgba(0, 0, 0, 0.48)',
+}
+
+/**
+ * Velvet Rose — optional wine / raspberry / antique gold palette.
+ */
+const VELVET_ROSE_VARS: Record<string, string> = {
+  ...buildDarkCommunityVars({
+    background: '#030002',
+    card: '#300A18',
+    cardHover: '#531026',
+    input: '#16030C',
+    border: '#544740',
+    primary: '#A53152',
+    text: '#F6F2F0',
+    bodyText: '#DDA7B9',
+    mutedText: '#8E8587',
+  }),
+  '--dc-surface-muted': '#16030C',
+  '--dc-elevated-solid': '#300A18',
+  '--dc-accent': '#A53152',
+  '--dc-accent-hover': '#D3577B',
+  '--dc-accent-muted': 'rgba(211, 87, 123, 0.16)',
+  '--dc-accent-border': 'rgba(211, 87, 123, 0.72)',
+  '--dc-accent-foreground': '#F6F2F0',
+  '--dc-border-subtle': 'rgba(221, 167, 185, 0.18)',
+  '--dc-border-strong': 'rgba(197, 160, 89, 0.55)',
+  /* Antique gold — matches Public Dancecard social art subhead */
+  '--dc-text-subtle': '#C5A059',
+  '--dc-slot-published': '#D3577B',
+  '--dc-compare-selected': 'rgba(211, 87, 123, 0.32)',
+  /* Atmosphere + chrome orbs: wine / blush / antique gold (site header/footer inherit) */
+  '--dc-atmosphere-gradient-top': '#12040A',
+  '--dc-atmosphere-gradient-mid': '#030002',
+  '--dc-atmosphere-gradient-bottom': '#0A0306',
+  '--dc-atmosphere-vignette': 'rgba(3, 0, 2, 0.55)',
+  '--dc-atmosphere-glow-a': 'rgba(165, 49, 82, 0.28)',
+  '--dc-atmosphere-glow-b': 'rgba(211, 87, 123, 0.14)',
+  '--dc-atmosphere-glow-c': 'rgba(197, 160, 89, 0.14)',
+  '--dc-atmosphere-orb-a': 'rgba(165, 49, 82, 0.22)',
+  '--dc-atmosphere-orb-b': 'rgba(211, 87, 123, 0.14)',
+  '--dc-atmosphere-orb-c': 'rgba(197, 160, 89, 0.12)',
+  '--dc-atmosphere-orb-opacity': '0.85',
+}
+
 function communityPreset(
   id: DancecardAppearanceId,
   name: string,
@@ -254,12 +354,28 @@ export const DANCECARD_APPEARANCE_PRESETS: readonly DancecardAppearancePreset[] 
     vars: MIDNIGHT_VELVET_VARS,
   },
   {
+    id: 'black-velvet',
+    name: 'Black Velvet',
+    tagline: 'Charcoal stage, pink only when it matters',
+    bestFor: 'Dancecard, schedule cards, and focused dark browsing',
+    mode: 'dark',
+    vars: BLACK_VELVET_VARS,
+  },
+  {
     id: 'midnight-brass',
     name: 'Black Gold',
     tagline: 'Luxury charcoal + gold',
     bestFor: 'Organizer dashboards and premium event branding',
     mode: 'dark',
     vars: MIDNIGHT_BRASS_VARS,
+  },
+  {
+    id: 'velvet-rose',
+    name: 'Velvet Rose',
+    tagline: 'Wine, raspberry, and antique gold',
+    bestFor: 'Optional wine-forward alternate',
+    mode: 'dark',
+    vars: VELVET_ROSE_VARS,
   },
   ...COMMUNITY_THEME_PRESETS,
   {
@@ -459,10 +575,15 @@ export const DANCECARD_APPEARANCE_PRESETS: readonly DancecardAppearancePreset[] 
 /** Sitewide default (member app, organizer embed, auth shells). */
 export const DEFAULT_DANCECARD_APPEARANCE: DancecardAppearanceId = 'midnight-velvet'
 
+/** Forced brand on dancecard.* stay-paths and /play product chrome. */
+export const PLAY_SURFACE_APPEARANCE: DancecardAppearanceId = 'black-velvet'
+
 /** Themes offered in member Settings (10 community palettes + legacy comfort themes). */
 export const MEMBER_SITE_APPEARANCE_IDS = [
   'midnight-velvet',
+  'black-velvet',
   'midnight-brass',
+  'velvet-rose',
   'midnight-teal',
   'obsidian-purple',
   'emerald-night',
@@ -485,6 +606,7 @@ export const MEMBER_DANCECARD_APPEARANCE_PRESETS = DANCECARD_APPEARANCE_PRESETS.
 /** Curated presets for first-time onboarding (visual swatches, not the full settings list). */
 export const ONBOARDING_APPEARANCE_IDS = [
   'midnight-velvet',
+  'black-velvet',
   'midnight-teal',
   'obsidian-purple',
   'crimson-classic',

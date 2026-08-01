@@ -1,6 +1,38 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { dayHeading } from '@/components/conventions/convention-schedule-utils'
+import {
+  exclusiveEndOfZonedCalendarDayMs,
+  formatUtcMsAsDatetimeLocalInZone,
+  parseDatetimeLocalInZone,
+  utcMillisAtZonedWallClock,
+  zonedCalendarDateFromUtc,
+} from '@/components/dancecard/time'
 import { useConfirm } from '@/hooks/useConfirm'
+import {
+  dancecardApiBase,
+  dancecardEntryIdForApi,
+  dancecardSharePublicPath,
+  makeDancecardApiScope,
+  type DancecardApiKind,
+  type DancecardApiScope,
+} from '@/lib/dancecard/dancecardApiScope'
+import SceneReservationCard, {
+  type SceneReservationBooking,
+} from '@/components/conventions/SceneReservationCard'
+
+type LargeSlotPresetKey = 'lunch' | 'dinner' | 'sleep'
+
+const LARGE_SLOT_PRESETS: Array<{
+  key: LargeSlotPresetKey
+  label: string
+  startHour: number
+  startMinute: number
+  endHour: number
+  endMinute: number
+}> = [
+  { key: 'lunch', label: 'Lunch', startHour: 12, startMinute: 0, endHour: 13, endMinute: 0 },
+  { key: 'dinner', label: 'Dinner', startHour: 18, startMinute: 0, endHour: 19, endMinute: 0 },
+  { key: 'sleep', label: 'Sleep', startHour: 23, startMinute: 0, endHour: 8, endMinute: 0 },
+]
 
 export type DancecardCalendarItem = {
   id: string
@@ -13,22 +45,9 @@ export type DancecardCalendarItem = {
   mutable: boolean
 }
 
-type FreeGap = { startsAt: string; endsAt: string }
-
 type ShareRow = { id: string; token: string; label: string | null; revokedAt: string | null; createdAt: string }
 
-type BookingRow = {
-  id: string
-  hostUserId: string
-  guestUserId: string
-  startsAt: string
-  endsAt: string
-  description: string
-  status: string
-  proposedStartsAt?: string | null
-  proposedEndsAt?: string | null
-  proposedByUserId?: string | null
-}
+type BookingRow = SceneReservationBooking
 
 type OpenVolunteerShift = {
   id: string
@@ -65,6 +84,28 @@ function pad2(n: number) {
   return String(n).padStart(2, '0')
 }
 
+/** Large, high-contrast expand/collapse chevron for mobile accordions. */
+function AccordionChevron({ open }: { open: boolean }) {
+  return (
+    <span
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-dc-border bg-dc-surface-muted text-dc-text md:hidden"
+      aria-hidden
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className={`h-6 w-6 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    </span>
+  )
+}
+
 async function dancecardFetchError(r: Response, fallback: string): Promise<string> {
   if (r.status === 401) return 'Sign in to view your dancecard.'
   if (r.status === 403) return 'You do not have access to the dancecard for this convention.'
@@ -87,13 +128,13 @@ function RescheduleProposeForm({
   bookingId,
   baseStartsAt,
   baseEndsAt,
-  slugKey,
+  apiBase,
   onDone,
 }: {
   bookingId: string
   baseStartsAt: string
   baseEndsAt: string
-  slugKey: string
+  apiBase: string
   onDone: () => void
 }) {
   const [start, setStart] = useState(() => toDatetimeLocalValue(baseStartsAt))
@@ -110,7 +151,7 @@ function RescheduleProposeForm({
     setBusy(true)
     try {
       const r = await fetch(
-        `/api/v1/conventions/${slugKey}/dancecard/booking-requests/${encodeURIComponent(bookingId)}/reschedule-request`,
+        `${apiBase}/dancecard/booking-requests/${encodeURIComponent(bookingId)}/reschedule-request`,
         {
           method: 'POST',
           credentials: 'include',
@@ -176,6 +217,7 @@ export default function ConventionDancecardPanel({
   timezone,
   reloadKey = 0,
   focusReservations = false,
+  apiKind = 'convention',
 }: {
   slug: string
   timezone: string
@@ -183,11 +225,12 @@ export default function ConventionDancecardPanel({
   reloadKey?: number
   /** Scroll emphasis on scene / reservation requests (hub Reservations card). */
   focusReservations?: boolean
+  apiKind?: DancecardApiKind
 }) {
-  const key = encodeURIComponent(slug)
+  const scope: DancecardApiScope = useMemo(() => makeDancecardApiScope(apiKind, slug), [apiKind, slug])
+  const apiBase = dancecardApiBase(scope)
   const { confirm, confirmDialog } = useConfirm()
   const [items, setItems] = useState<DancecardCalendarItem[]>([])
-  const [freeGaps, setFreeGaps] = useState<FreeGap[]>([])
   const [bufferMinutes, setBufferMinutes] = useState(0)
   const [shares, setShares] = useState<ShareRow[]>([])
   const [incoming, setIncoming] = useState<BookingRow[]>([])
@@ -200,7 +243,8 @@ export default function ConventionDancecardPanel({
   const [blockStart, setBlockStart] = useState('')
   const [blockEnd, setBlockEnd] = useState('')
   const [blockBusy, setBlockBusy] = useState(false)
-  const [showBlockForm, setShowBlockForm] = useState(false)
+  const [applyToAllDays, setApplyToAllDays] = useState(false)
+  const [selectedLargePreset, setSelectedLargePreset] = useState<LargeSlotPresetKey | null>(null)
   const [openShifts, setOpenShifts] = useState<OpenVolunteerShift[]>([])
   const [claimBusyId, setClaimBusyId] = useState<string | null>(null)
   const [mySwaps, setMySwaps] = useState<SwapRow[]>([])
@@ -209,34 +253,49 @@ export default function ConventionDancecardPanel({
   const [swapShiftId, setSwapShiftId] = useState('')
   const [swapNote, setSwapNote] = useState('')
   const [swapBusy, setSwapBusy] = useState(false)
+  /** Mobile accordion: one availability drawer open at a time. Desktop keeps all open. */
+  const [availDrawer, setAvailDrawer] = useState<'share' | 'block' | 'blocked'>('share')
+  const [isMdUp, setIsMdUp] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    const sync = () => setIsMdUp(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
 
   const reload = useCallback(async () => {
     setErr(null)
+    const volunteerFetches = scope.showVolunteerTools
+      ? [
+          fetch(`${apiBase}/volunteer-shifts/open`, { credentials: 'include' }),
+          fetch(`${apiBase}/shift-swaps/mine`, { credentials: 'include' }),
+          fetch(`${apiBase}/shift-swaps/eligible-shifts`, { credentials: 'include' }),
+        ]
+      : ([null, null, null] as const)
     const [c1, c2, c3, c4, c5, c6] = await Promise.all([
-      fetch(`/api/v1/conventions/${key}/dancecard/calendar`, { credentials: 'include' }),
-      fetch(`/api/v1/conventions/${key}/dancecard/shares`, { credentials: 'include' }),
-      fetch(`/api/v1/conventions/${key}/dancecard/booking-requests`, { credentials: 'include' }),
-      fetch(`/api/v1/conventions/${key}/volunteer-shifts/open`, { credentials: 'include' }),
-      fetch(`/api/v1/conventions/${key}/shift-swaps/mine`, { credentials: 'include' }),
-      fetch(`/api/v1/conventions/${key}/shift-swaps/eligible-shifts`, { credentials: 'include' }),
+      fetch(`${apiBase}/dancecard/calendar`, { credentials: 'include' }),
+      fetch(`${apiBase}/dancecard/shares`, { credentials: 'include' }),
+      fetch(`${apiBase}/dancecard/booking-requests`, { credentials: 'include' }),
+      ...volunteerFetches,
     ])
     let authErr: string | null = null
     if (c1.ok) {
       const d = (await c1.json()) as {
         items: DancecardCalendarItem[]
-        freeGaps: FreeGap[]
         bufferMinutes: number
         conventionStartsAt?: string
         conventionEndsAt?: string
+        playSpaceStartsAt?: string
+        playSpaceEndsAt?: string
       }
       setItems(d.items ?? [])
-      setFreeGaps(d.freeGaps ?? [])
       setBufferMinutes(d.bufferMinutes ?? 0)
-      setConventionStartsAt(d.conventionStartsAt ?? null)
-      setConventionEndsAt(d.conventionEndsAt ?? null)
+      setConventionStartsAt(d.conventionStartsAt ?? d.playSpaceStartsAt ?? null)
+      setConventionEndsAt(d.conventionEndsAt ?? d.playSpaceEndsAt ?? null)
     } else {
       setItems([])
-      setFreeGaps([])
       setConventionStartsAt(null)
       setConventionEndsAt(null)
       if (c1.status === 401 || c1.status === 403) {
@@ -264,19 +323,19 @@ export default function ConventionDancecardPanel({
       }
     }
     if (authErr) setErr(authErr)
-    if (c4.ok) {
+    if (c4?.ok) {
       const d = (await c4.json()) as { shifts: OpenVolunteerShift[] }
       setOpenShifts(d.shifts ?? [])
     } else {
       setOpenShifts([])
     }
-    if (c5.ok) {
+    if (c5?.ok) {
       const d = (await c5.json()) as { swaps: SwapRow[] }
       setMySwaps(d.swaps ?? [])
     } else {
       setMySwaps([])
     }
-    if (c6.ok) {
+    if (c6?.ok) {
       const d = (await c6.json()) as { myShifts: EligibleShift[]; openShifts: EligibleShift[] }
       setEligibleMine(d.myShifts ?? [])
       setEligibleOpen(d.openShifts ?? [])
@@ -284,7 +343,7 @@ export default function ConventionDancecardPanel({
       setEligibleMine([])
       setEligibleOpen([])
     }
-  }, [key])
+  }, [apiBase, scope.showVolunteerTools])
 
   useEffect(() => {
     if (!swapShiftId && eligibleMine.length > 0) {
@@ -309,7 +368,7 @@ export default function ConventionDancecardPanel({
 
   async function saveBuffer(next: number) {
     setMsg(null)
-    const r = await fetch(`/api/v1/conventions/${key}/dancecard/prefs`, {
+    const r = await fetch(`${apiBase}/dancecard/prefs`, {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -330,7 +389,8 @@ export default function ConventionDancecardPanel({
       return
     }
     setErr(null)
-    const r = await fetch(`/api/v1/conventions/${key}/dancecard/entries/${encodeURIComponent(id)}`, {
+    const entryId = dancecardEntryIdForApi(id)
+    const r = await fetch(`${apiBase}/dancecard/entries/${encodeURIComponent(entryId)}`, {
       method: 'DELETE',
       credentials: 'include',
     })
@@ -342,49 +402,160 @@ export default function ConventionDancecardPanel({
     void reload()
   }
 
-  async function addPersonalBlock() {
-    if (!blockTitle.trim() || !blockStart || !blockEnd) {
-      setErr('Title, start, and end are required.')
+  async function postBusyBlock(title: string, startsAtIso: string, endsAtIso: string) {
+    const r = await fetch(`${apiBase}/dancecard`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, startsAt: startsAtIso, endsAt: endsAtIso }),
+    })
+    if (!r.ok) {
+      const j = (await r.json().catch(() => ({}))) as { error?: string }
+      throw new Error(j.error ?? 'Could not add personal block.')
+    }
+  }
+
+  function presetWindowForDay(
+    preset: (typeof LARGE_SLOT_PRESETS)[number],
+    dayYmd: string,
+  ): { startsAt: string; endsAt: string } | null {
+    const startMs = utcMillisAtZonedWallClock(timezone, dayYmd, preset.startHour, preset.startMinute)
+    if (startMs == null) return null
+    const wrapsNextDay =
+      preset.endHour < preset.startHour ||
+      (preset.endHour === preset.startHour && preset.endMinute <= preset.startMinute)
+    const endYmd = wrapsNextDay
+      ? zonedCalendarDateFromUtc(exclusiveEndOfZonedCalendarDayMs(timezone, dayYmd), timezone)
+      : dayYmd
+    const endMs = utcMillisAtZonedWallClock(timezone, endYmd, preset.endHour, preset.endMinute)
+    if (endMs == null || endMs <= startMs) return null
+    const rangeStart = conventionStartsAt ? Date.parse(conventionStartsAt) : null
+    const rangeEnd = conventionEndsAt ? Date.parse(conventionEndsAt) : null
+    let clippedStart = startMs
+    let clippedEnd = endMs
+    if (rangeStart != null && Number.isFinite(rangeStart)) clippedStart = Math.max(clippedStart, rangeStart)
+    if (rangeEnd != null && Number.isFinite(rangeEnd)) clippedEnd = Math.min(clippedEnd, rangeEnd)
+    if (clippedEnd <= clippedStart) return null
+    return { startsAt: new Date(clippedStart).toISOString(), endsAt: new Date(clippedEnd).toISOString() }
+  }
+
+  function selectLargePreset(key: LargeSlotPresetKey) {
+    const preset = LARGE_SLOT_PRESETS.find((p) => p.key === key)
+    if (!preset) return
+    setSelectedLargePreset(key)
+    const day = conventionStartsAt
+      ? zonedCalendarDateFromUtc(Date.parse(conventionStartsAt), timezone)
+      : null
+    if (!day) {
+      setBlockTitle(preset.label)
+      setErr('Event dates are not loaded yet.')
       return
     }
+    const win = presetWindowForDay(preset, day)
+    if (!win) {
+      setErr(`Could not place ${preset.label} on that day.`)
+      return
+    }
+    setBlockTitle(preset.label)
+    setBlockStart(formatUtcMsAsDatetimeLocalInZone(Date.parse(win.startsAt), timezone))
+    setBlockEnd(formatUtcMsAsDatetimeLocalInZone(Date.parse(win.endsAt), timezone))
+    setErr(null)
+  }
+
+  async function addPersonalBlock() {
+    if (!blockStart || !blockEnd) {
+      setErr('Start and end are required.')
+      return
+    }
+    const title =
+      blockTitle.trim() ||
+      (selectedLargePreset ?
+        LARGE_SLOT_PRESETS.find((p) => p.key === selectedLargePreset)?.label
+      : null) ||
+      'Busy'
+    if (!blockTitle.trim()) setBlockTitle(title)
     setBlockBusy(true)
     setErr(null)
     try {
-      const r = await fetch(`/api/v1/conventions/${key}/dancecard`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: blockTitle.trim(),
-          startsAt: new Date(blockStart).toISOString(),
-          endsAt: new Date(blockEnd).toISOString(),
-        }),
-      })
-      if (!r.ok) {
-        setErr('Could not add personal block.')
-        return
+      if (applyToAllDays && conventionStartsAt && conventionEndsAt) {
+        const preset = selectedLargePreset
+          ? LARGE_SLOT_PRESETS.find((p) => p.key === selectedLargePreset)
+          : null
+        const rangeStartMs = Date.parse(conventionStartsAt)
+        const rangeEndMs = Date.parse(conventionEndsAt)
+        let dayYmd = zonedCalendarDateFromUtc(rangeStartMs, timezone)
+        const lastYmd = zonedCalendarDateFromUtc(rangeEndMs - 1, timezone)
+        let added = 0
+        while (dayYmd.localeCompare(lastYmd) <= 0) {
+          let startsAt: string | null = null
+          let endsAt: string | null = null
+          if (preset) {
+            const win = presetWindowForDay(preset, dayYmd)
+            if (win) {
+              startsAt = win.startsAt
+              endsAt = win.endsAt
+            }
+          } else {
+            const startParts = parseDatetimeLocalInZone(blockStart, timezone)
+            const endParts = parseDatetimeLocalInZone(blockEnd, timezone)
+            if (startParts != null && endParts != null) {
+              const startWall = formatUtcMsAsDatetimeLocalInZone(startParts, timezone).slice(11)
+              const endWall = formatUtcMsAsDatetimeLocalInZone(endParts, timezone).slice(11)
+              const [sh, sm] = startWall.split(':').map(Number)
+              const [eh, em] = endWall.split(':').map(Number)
+              const wraps =
+                eh < sh || (eh === sh && em <= sm)
+              const startMs = utcMillisAtZonedWallClock(timezone, dayYmd, sh, sm)
+              const endYmd = wraps
+                ? zonedCalendarDateFromUtc(exclusiveEndOfZonedCalendarDayMs(timezone, dayYmd), timezone)
+                : dayYmd
+              const endMs = utcMillisAtZonedWallClock(timezone, endYmd, eh, em)
+              if (startMs != null && endMs != null && endMs > startMs) {
+                const clippedStart = Math.max(startMs, rangeStartMs)
+                const clippedEnd = Math.min(endMs, rangeEndMs)
+                if (clippedEnd > clippedStart) {
+                  startsAt = new Date(clippedStart).toISOString()
+                  endsAt = new Date(clippedEnd).toISOString()
+                }
+              }
+            }
+          }
+          if (startsAt && endsAt) {
+            await postBusyBlock(title, startsAt, endsAt)
+            added += 1
+          }
+          dayYmd = zonedCalendarDateFromUtc(exclusiveEndOfZonedCalendarDayMs(timezone, dayYmd), timezone)
+        }
+        if (added === 0) {
+          setErr('No blocks could be placed in the event window.')
+          return
+        }
+        setMsg(`${title} blocked on ${added} day(s).`)
+      } else {
+        const startMs = parseDatetimeLocalInZone(blockStart, timezone) ?? Date.parse(blockStart)
+        const endMs = parseDatetimeLocalInZone(blockEnd, timezone) ?? Date.parse(blockEnd)
+        if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+          setErr('Start and end must be a valid window.')
+          return
+        }
+        await postBusyBlock(title, new Date(startMs).toISOString(), new Date(endMs).toISOString())
+        setMsg('Personal block added.')
       }
       setBlockTitle('')
       setBlockStart('')
       setBlockEnd('')
-      setMsg('Personal block added.')
+      setSelectedLargePreset(null)
       void reload()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not add personal block.')
     } finally {
       setBlockBusy(false)
     }
   }
 
-  function prefillBlockForHour(hourStartIso: string, hourEndIso: string) {
-    // datetime-local expects a local-time string; convert from the absolute ISO instants we computed.
-    setBlockTitle('Busy time')
-    setBlockStart(toDatetimeLocalValue(hourStartIso))
-    setBlockEnd(toDatetimeLocalValue(hourEndIso))
-    setShowBlockForm(true)
-  }
-
   async function createShare() {
     setMsg(null)
-    const r = await fetch(`/api/v1/conventions/${key}/dancecard/share`, {
+    const r = await fetch(`${apiBase}/dancecard/share`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -409,7 +580,7 @@ export default function ConventionDancecardPanel({
     setErr(null)
     try {
       const r = await fetch(
-        `/api/v1/conventions/${key}/volunteer-shifts/${encodeURIComponent(shiftId)}/claim`,
+        `${apiBase}/volunteer-shifts/${encodeURIComponent(shiftId)}/claim`,
         { method: 'POST', credentials: 'include' },
       )
       if (!r.ok) {
@@ -432,7 +603,7 @@ export default function ConventionDancecardPanel({
     setSwapBusy(true)
     setErr(null)
     try {
-      const r = await fetch(`/api/v1/conventions/${key}/shift-swaps/requests`, {
+      const r = await fetch(`${apiBase}/shift-swaps/requests`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -455,7 +626,7 @@ export default function ConventionDancecardPanel({
   }
 
   async function cancelSwap(swapId: string) {
-    const r = await fetch(`/api/v1/conventions/${key}/shift-swaps/requests/${encodeURIComponent(swapId)}`, {
+    const r = await fetch(`${apiBase}/shift-swaps/requests/${encodeURIComponent(swapId)}`, {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -470,7 +641,7 @@ export default function ConventionDancecardPanel({
   }
 
   async function revokeShare(id: string) {
-    const r = await fetch(`/api/v1/conventions/${key}/dancecard/shares/${encodeURIComponent(id)}`, {
+    const r = await fetch(`${apiBase}/dancecard/shares/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       credentials: 'include',
     })
@@ -478,7 +649,7 @@ export default function ConventionDancecardPanel({
   }
 
   async function acceptBooking(id: string) {
-    const r = await fetch(`/api/v1/conventions/${key}/dancecard/booking-requests/${encodeURIComponent(id)}/accept`, {
+    const r = await fetch(`${apiBase}/dancecard/booking-requests/${encodeURIComponent(id)}/accept`, {
       method: 'POST',
       credentials: 'include',
     })
@@ -486,7 +657,7 @@ export default function ConventionDancecardPanel({
   }
 
   async function declineBooking(id: string) {
-    const r = await fetch(`/api/v1/conventions/${key}/dancecard/booking-requests/${encodeURIComponent(id)}/decline`, {
+    const r = await fetch(`${apiBase}/dancecard/booking-requests/${encodeURIComponent(id)}/decline`, {
       method: 'POST',
       credentials: 'include',
     })
@@ -495,7 +666,7 @@ export default function ConventionDancecardPanel({
 
   async function cancelBooking(id: string) {
     if (!(await confirm('Cancel this scene?', 'Both you and the other person will lose this reservation.', { destructive: true }))) return
-    const r = await fetch(`/api/v1/conventions/${key}/dancecard/booking-requests/${encodeURIComponent(id)}/cancel`, {
+    const r = await fetch(`${apiBase}/dancecard/booking-requests/${encodeURIComponent(id)}/cancel`, {
       method: 'POST',
       credentials: 'include',
     })
@@ -504,7 +675,7 @@ export default function ConventionDancecardPanel({
 
   async function acceptRescheduleBooking(id: string) {
     const r = await fetch(
-      `/api/v1/conventions/${key}/dancecard/booking-requests/${encodeURIComponent(id)}/reschedule-accept`,
+      `${apiBase}/dancecard/booking-requests/${encodeURIComponent(id)}/reschedule-accept`,
       { method: 'POST', credentials: 'include' },
     )
     if (r.ok) void reload()
@@ -525,75 +696,13 @@ export default function ConventionDancecardPanel({
       .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
   }, [items])
 
-  type HourSlotRow = {
-    slotStartIso: string
-    slotEndIso: string
-    open: boolean
-    label: string
-  }
-
-  const hourSlotsByDay = useMemo(() => {
-    if (!conventionStartsAt || !conventionEndsAt) return [] as Array<{ day: string; slots: HourSlotRow[] }>
-
-    const winStart = new Date(conventionStartsAt)
-    const winEnd = new Date(conventionEndsAt)
-
-    // Normalize to hour boundaries in absolute time; day labels are rendered in the convention timezone.
-    const cursor = new Date(winStart)
-    cursor.setUTCMinutes(0, 0, 0)
-
-    const freeIntervals = freeGaps
-      .map((g) => ({ start: new Date(g.startsAt), end: new Date(g.endsAt) }))
-      .filter((g) => g.end.getTime() > g.start.getTime())
-
-    function inAnyFreeGap(start: Date, end: Date) {
-      // "Open" means the entire hour slot is inside a free gap.
-      return freeIntervals.some((g) => start.getTime() >= g.start.getTime() && end.getTime() <= g.end.getTime())
-    }
-
-    function claimedLabelForOverlap(overlaps: DancecardCalendarItem[]) {
-      if (overlaps.length === 0) return 'Open'
-      const best = overlaps.sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0]!
-      const raw = `${best.subtitle ?? best.title}`.trim()
-      if (!raw) return 'Busy'
-      if (best.kind === 'dancecard_manual') return raw
-      const rawLower = raw.toLowerCase()
-      if (rawLower.startsWith('claimed by ')) return raw
-      if (rawLower.startsWith('blocked:')) return raw
-      return `Claimed by ${raw}`
-    }
-
-    const map = new Map<string, HourSlotRow[]>()
-    for (let t = cursor.getTime(); t < winEnd.getTime(); t += 60 * 60 * 1000) {
-      const slotStart = new Date(t)
-      const slotEnd = new Date(t + 60 * 60 * 1000)
-
-      const open = inAnyFreeGap(slotStart, slotEnd)
-
-      const overlaps = items.filter((it) => new Date(it.startsAt).getTime() < slotEnd.getTime() && new Date(it.endsAt).getTime() > slotStart.getTime())
-
-      // Only show hour rows that are either open (green) or busy/claimed.
-      if (!open && overlaps.length === 0) continue
-
-      const label = open ? 'Open' : claimedLabelForOverlap(overlaps)
-      const day = dayHeading(slotStart.toISOString(), timezone)
-
-      if (!map.has(day)) map.set(day, [])
-      map.get(day)!.push({ slotStartIso: slotStart.toISOString(), slotEndIso: slotEnd.toISOString(), open, label })
-    }
-
-    return Array.from(map.entries()).map(([day, slots]) => ({
-      day,
-      slots: slots.sort((a, b) => new Date(a.slotStartIso).getTime() - new Date(b.slotStartIso).getTime()),
-    }))
-  }, [conventionStartsAt, conventionEndsAt, freeGaps, items, timezone])
-
   const bufferOptions = useMemo(() => Array.from({ length: 9 }, (_, i) => i * 15), [])
 
-  const scrollList =
-    'max-h-36 overflow-y-auto overscroll-contain pr-1 [-webkit-overflow-scrolling:touch] [scrollbar-gutter:stable]'
-  const scrollPanel =
-    'max-h-[min(22rem,42vh)] overflow-y-auto overscroll-contain pr-1 [-webkit-overflow-scrolling:touch] [scrollbar-gutter:stable]'
+  const scrollList = focusReservations
+    ? 'max-h-[min(70vh,36rem)] overflow-y-auto overscroll-contain pr-1 [-webkit-overflow-scrolling:touch] [scrollbar-gutter:stable]'
+    : 'max-h-36 overflow-y-auto overscroll-contain pr-1 [-webkit-overflow-scrolling:touch] [scrollbar-gutter:stable]'
+
+  const isPlaySpace = scope.kind === 'play-space'
 
   return (
     <div className="dc-availability-panel space-y-3">
@@ -632,266 +741,323 @@ export default function ConventionDancecardPanel({
         </div>
       : null}
 
-      <section className="space-y-2 rounded-xl border border-dc-border bg-dc-elevated/95/50 p-3">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold text-dc-text">Your blocked times</h3>
-            <p className="mt-0.5 text-[11px] text-dc-muted">Presets and custom blocks on your dancecard.</p>
-          </div>
+      {!focusReservations ?
+        <section className="rounded-xl border border-amber-500/20 bg-amber-950/10">
           <button
             type="button"
-            className="min-h-10 shrink-0 rounded-xl border border-dc-border bg-dc-accent/10 px-3 text-xs font-medium text-dc-accent hover:bg-dc-accent/16"
-            onClick={() => setShowBlockForm((v) => !v)}
+            className="flex min-h-14 w-full items-center justify-between gap-3 px-3 py-3 text-left md:min-h-11 md:cursor-default md:py-2.5"
+            onClick={() => {
+              if (!isMdUp) setAvailDrawer((d) => (d === 'share' ? 'block' : 'share'))
+            }}
           >
-            Add busy time
+            <h3 className="text-base font-semibold text-dc-text">Share &amp; buffer</h3>
+            <AccordionChevron open={availDrawer === 'share' || isMdUp} />
           </button>
-        </div>
+          {(isMdUp || availDrawer === 'share') ?
+            <div className="space-y-3 border-t border-amber-500/15 px-3 pb-3 pt-2">
+              <p className="hidden text-xs text-dc-muted md:block">
+                Buffer adds trailing time after commitments. Share links only expose free windows.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {bufferOptions.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={`min-h-11 rounded-full px-3.5 py-2 text-xs font-medium transition ${
+                      bufferMinutes === m
+                        ? 'bg-amber-600/90 text-black'
+                        : 'border border-dc-border text-dc-text-muted hover:border-white/30 hover:text-dc-text'
+                    }`}
+                    onClick={() => void saveBuffer(m)}
+                  >
+                    {m === 0 ? 'No buffer' : `${m}m`}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="min-h-11 w-full rounded-xl bg-dc-accent px-4 py-2.5 text-sm font-semibold text-dc-accent-foreground hover:bg-dc-accent-hover sm:w-auto"
+                onClick={() => void createShare()}
+              >
+                Copy share link
+              </button>
+              {shares.filter((s) => !s.revokedAt).length > 0 ?
+                <details className="rounded-lg border border-dc-border/80 bg-dc-surface/40">
+                  <summary className="min-h-11 cursor-pointer list-none px-3 py-2 text-xs font-medium text-dc-muted [&::-webkit-details-marker]:hidden">
+                    {shares.filter((s) => !s.revokedAt).length} active link
+                    {shares.filter((s) => !s.revokedAt).length === 1 ? '' : 's'} · tap to manage
+                  </summary>
+                  <ul className="space-y-1 border-t border-dc-border px-2 py-2 text-xs">
+                    {shares
+                      .filter((s) => !s.revokedAt)
+                      .map((s) => (
+                        <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg p-2">
+                          <code className="max-w-[14rem] truncate text-dc-text-muted sm:max-w-none sm:break-all">
+                            {`${window.location.origin}${dancecardSharePublicPath(scope, s.token)}`}
+                          </code>
+                          <button
+                            type="button"
+                            className="min-h-11 min-w-11 rounded-lg px-2 text-red-300 hover:bg-red-500/10"
+                            onClick={() => void revokeShare(s.id)}
+                          >
+                            Revoke
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </details>
+              : null}
+            </div>
+          : null}
+        </section>
+      : null}
 
-        {blockedTimes.length === 0 ?
-          <p className="text-sm text-dc-muted">
-            Nothing blocked yet. Tap green hours below or use Add busy time.
-          </p>
-        : <ul className={`space-y-1.5 ${scrollList}`}>
-            {blockedTimes.map((it) => (
-              <li key={it.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/[0.08] bg-dc-surface-muted px-2.5 py-1.5">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-dc-text">{it.title}</p>
-                  <p className="text-xs text-dc-text-muted">
-                    {new Date(it.startsAt).toLocaleString([], { timeZone: timezone, hour: 'numeric', minute: '2-digit', weekday: 'short', month: 'short', day: '2-digit' })} –{' '}
-                    {new Date(it.endsAt).toLocaleTimeString([], { timeZone: timezone, hour: 'numeric', minute: '2-digit' })}
-                  </p>
-                </div>
+      {!focusReservations ?
+        <section className="rounded-xl border border-dc-border bg-dc-elevated/95/40">
+          <button
+            type="button"
+            className="flex min-h-14 w-full items-center justify-between gap-3 px-3 py-3 text-left md:min-h-11 md:cursor-default md:py-2.5"
+            onClick={() => {
+              if (!isMdUp) setAvailDrawer((d) => (d === 'block' ? 'share' : 'block'))
+            }}
+          >
+            <h3 className="text-base font-semibold text-dc-text">Block time</h3>
+            <AccordionChevron open={availDrawer === 'block' || isMdUp} />
+          </button>
+          {(isMdUp || availDrawer === 'block') ?
+            <div className="space-y-3 border-t border-dc-border px-3 pb-3 pt-2">
+              <div className="flex flex-wrap gap-2">
+                {LARGE_SLOT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.key}
+                    type="button"
+                    className={`min-h-11 rounded-full px-4 py-2 text-sm font-medium transition ${
+                      selectedLargePreset === preset.key
+                        ? 'bg-dc-accent text-dc-accent-foreground'
+                        : 'border border-dc-border bg-dc-surface-muted text-dc-text hover:border-dc-accent/50'
+                    }`}
+                    onClick={() => selectLargePreset(preset.key)}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-dc-muted">
+                Pick Lunch, Dinner, or Sleep — or enter a custom title and times below.
+              </p>
+              <input
+                className="min-h-11 w-full rounded-xl border border-dc-border bg-dc-surface-muted px-3 py-2 text-sm text-dc-text"
+                placeholder="Title (defaults to Busy)"
+                value={blockTitle}
+                onChange={(e) => {
+                  setBlockTitle(e.target.value)
+                  setSelectedLargePreset(null)
+                }}
+              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="text-xs text-dc-muted">
+                  Start
+                  <input
+                    type="datetime-local"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-dc-border bg-dc-surface-muted px-2 py-1.5 text-sm text-dc-text"
+                    value={blockStart}
+                    onChange={(e) => {
+                      setBlockStart(e.target.value)
+                      setSelectedLargePreset(null)
+                      if (!blockTitle.trim()) setBlockTitle('Busy')
+                    }}
+                  />
+                </label>
+                <label className="text-xs text-dc-muted">
+                  End
+                  <input
+                    type="datetime-local"
+                    className="mt-1 min-h-11 w-full rounded-xl border border-dc-border bg-dc-surface-muted px-2 py-1.5 text-sm text-dc-text"
+                    value={blockEnd}
+                    onChange={(e) => {
+                      setBlockEnd(e.target.value)
+                      setSelectedLargePreset(null)
+                      if (!blockTitle.trim()) setBlockTitle('Busy')
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <button
                   type="button"
-                  className="shrink-0 text-xs text-red-300 hover:underline"
-                  onClick={() => void removePersonalBlock(it.id)}
+                  disabled={blockBusy || !blockStart || !blockEnd}
+                  className="min-h-11 w-full rounded-xl bg-dc-accent px-4 py-2.5 text-sm font-semibold text-dc-accent-foreground disabled:opacity-50 sm:w-auto"
+                  onClick={() => void addPersonalBlock()}
                 >
-                  Remove
+                  {blockBusy ? 'Adding…' : 'Add block'}
                 </button>
-              </li>
-            ))}
-          </ul>
-        }
-
-        {showBlockForm ?
-          <div className="space-y-3 rounded-xl border border-dc-border bg-dc-elevated/95/40 p-3">
-            <div className="grid gap-2">
-              <input
-                className="w-full rounded-xl border border-dc-border bg-dc-surface-muted px-3 py-2 text-sm text-dc-text"
-                placeholder="Title"
-                value={blockTitle}
-                onChange={(e) => setBlockTitle(e.target.value)}
-              />
+                <label className="inline-flex min-h-11 items-center gap-2 text-xs text-dc-muted">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-dc-border"
+                    checked={applyToAllDays}
+                    onChange={(e) => setApplyToAllDays(e.target.checked)}
+                  />
+                  Apply to all event days
+                </label>
+              </div>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <label className="text-xs text-dc-muted">
-                Start
-                <input
-                  type="datetime-local"
-                  className="mt-1 w-full rounded-xl border border-dc-border bg-dc-surface-muted px-2 py-1.5 text-sm text-dc-text"
-                  value={blockStart}
-                  onChange={(e) => setBlockStart(e.target.value)}
-                />
-              </label>
-              <label className="text-xs text-dc-muted">
-                End
-                <input
-                  type="datetime-local"
-                  className="mt-1 w-full rounded-xl border border-dc-border bg-dc-surface-muted px-2 py-1.5 text-sm text-dc-text"
-                  value={blockEnd}
-                  onChange={(e) => setBlockEnd(e.target.value)}
-                />
-              </label>
-            </div>
-            <button
-              type="button"
-              disabled={blockBusy}
-              className="rounded-xl bg-dc-accent/18 px-4 py-2 text-sm font-medium text-dc-accent disabled:opacity-50"
-              onClick={() => void addPersonalBlock()}
-            >
-              {blockBusy ? 'Adding…' : 'Add block'}
-            </button>
-          </div>
-        : null}
-      </section>
+          : null}
+        </section>
+      : null}
 
-      <section id="dc-reservations" className="space-y-2 rounded-xl border border-dc-border bg-dc-elevated/95/50 p-3">
-        <h3 className="text-sm font-semibold text-dc-text">Scene reservations</h3>
-        <p className="text-[11px] text-dc-muted">Approve requests and manage confirmed scenes.</p>
-        {sortedIncoming.length === 0 ?
-          <p className="text-xs text-dc-muted">Nothing here yet.</p>
-        : <ul className={`space-y-2 ${scrollList}`}>
-            {sortedIncoming.map((b) => {
-              const guestProposedReschedule =
-                b.status === 'RESCHEDULE_PENDING' && b.proposedByUserId === b.guestUserId
-              const hostProposedReschedule =
-                b.status === 'RESCHEDULE_PENDING' && b.proposedByUserId === b.hostUserId
-              return (
-                <li key={b.id} className="rounded-xl border border-dc-border bg-dc-elevated/95 p-3 text-sm">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-dc-muted">{b.status}</p>
-                  <p className="text-dc-text-muted">
-                    {new Date(b.startsAt).toLocaleString([], { timeZone: timezone })} –{' '}
-                    {new Date(b.endsAt).toLocaleTimeString([], { timeZone: timezone })}
-                  </p>
-                  <p className="mt-1 text-dc-text">{b.description}</p>
-                  {b.status === 'RESCHEDULE_PENDING' ?
-                    <p className="mt-1 text-xs text-amber-200">
-                      Proposed window:{' '}
-                      {b.proposedStartsAt ?
-                        `${new Date(b.proposedStartsAt).toLocaleString([], { timeZone: timezone })} – ${b.proposedEndsAt ? new Date(b.proposedEndsAt).toLocaleTimeString([], { timeZone: timezone }) : ''}`
-                      : ''}
-                    </p>
-                  : null}
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {b.status === 'PENDING' ?
-                      <>
-                        <button
-                          type="button"
-                          className="rounded-lg bg-dc-accent/18 px-3 py-1.5 text-xs font-medium text-dc-accent"
-                          onClick={() => void acceptBooking(b.id)}
-                        >
-                          Accept
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-lg px-3 py-1.5 text-xs text-dc-text-muted hover:text-dc-text"
-                          onClick={() => void declineBooking(b.id)}
-                        >
-                          Decline
-                        </button>
-                      </>
-                    : null}
-                    {guestProposedReschedule ?
-                      <>
-                        <button
-                          type="button"
-                          className="rounded-lg bg-dc-accent/18 px-3 py-1.5 text-xs font-medium text-dc-accent"
-                          onClick={() => void acceptRescheduleBooking(b.id)}
-                        >
-                          Accept new time
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-lg px-3 py-1.5 text-xs text-dc-text-muted hover:text-dc-text"
-                          onClick={() => void declineBooking(b.id)}
-                        >
-                          Decline reschedule
-                        </button>
-                      </>
-                    : null}
-                    {hostProposedReschedule ?
-                      <p className="text-xs text-dc-muted">Waiting for the guest to confirm your proposed time.</p>
-                    : null}
-                    {b.status === 'ACCEPTED' || b.status === 'RESCHEDULE_PENDING' ?
+      {!focusReservations ?
+        <section className="rounded-xl border border-dc-border bg-dc-elevated/95/50">
+          <button
+            type="button"
+            className="flex min-h-14 w-full items-center justify-between gap-3 px-3 py-3 text-left md:min-h-11 md:py-2.5"
+            onClick={() => {
+              if (!isMdUp) setAvailDrawer((d) => (d === 'blocked' ? 'share' : 'blocked'))
+            }}
+          >
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-dc-text">Your blocked times</h3>
+              <p className="mt-0.5 text-xs text-dc-muted">
+                {blockedTimes.length === 0
+                  ? 'None yet'
+                  : `${blockedTimes.length} block${blockedTimes.length === 1 ? '' : 's'}`}
+              </p>
+            </div>
+            <AccordionChevron open={availDrawer === 'blocked' || isMdUp} />
+          </button>
+          {(isMdUp || availDrawer === 'blocked') ?
+            <div className="space-y-2 border-t border-dc-border px-3 pb-3 pt-2">
+              {blockedTimes.length === 0 ?
+                <p className="text-sm text-dc-muted">Nothing blocked yet.</p>
+              : <ul className={`space-y-1.5 ${scrollList}`}>
+                  {blockedTimes.map((it) => (
+                    <li
+                      key={it.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/[0.08] bg-dc-surface-muted px-2.5 py-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-dc-text">{it.title}</p>
+                        <p className="text-xs text-dc-text-muted">
+                          {new Date(it.startsAt).toLocaleString([], {
+                            timeZone: timezone,
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            weekday: 'short',
+                            month: 'short',
+                            day: '2-digit',
+                          })}{' '}
+                          –{' '}
+                          {new Date(it.endsAt).toLocaleTimeString([], {
+                            timeZone: timezone,
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
                       <button
                         type="button"
-                        className="rounded-lg px-3 py-1.5 text-xs text-red-300 hover:underline"
-                        onClick={() => void cancelBooking(b.id)}
+                        className="min-h-11 shrink-0 rounded-lg px-3 text-sm text-red-300 hover:bg-red-500/10"
+                        onClick={() => void removePersonalBlock(it.id)}
                       >
-                        Cancel scene
+                        Remove
                       </button>
-                    : null}
-                  </div>
-                  {b.status === 'ACCEPTED' ?
+                    </li>
+                  ))}
+                </ul>
+              }
+            </div>
+          : null}
+        </section>
+      : null}
+
+      <section
+        id="dc-reservations"
+        className={
+          focusReservations ?
+            'space-y-3'
+          : 'space-y-2 rounded-xl border border-dc-border bg-dc-surface-muted/40 p-3'
+        }
+      >
+        {!focusReservations ?
+          <>
+            <h3 className="text-sm font-semibold text-dc-text">Scene reservations</h3>
+            <p className="hidden text-[11px] text-dc-muted md:block">
+              Approve requests and manage confirmed scenes.
+            </p>
+          </>
+        : null}
+        {sortedIncoming.length === 0 && outgoing.length === 0 ?
+          <p className="text-xs text-dc-muted">Nothing here yet.</p>
+        : null}
+        {sortedIncoming.length > 0 ?
+          <ul className={`space-y-3 ${scrollList}`}>
+            {sortedIncoming.map((b) => (
+              <SceneReservationCard
+                key={b.id}
+                booking={b}
+                role="host"
+                timezone={timezone}
+                apiBase={apiBase}
+                allowDirectReschedule={isPlaySpace}
+                allowNotesEdit={isPlaySpace}
+                proposeRescheduleSlot={
+                  b.status === 'ACCEPTED' && scope.showReschedule ?
                     <RescheduleProposeForm
                       bookingId={b.id}
                       baseStartsAt={b.startsAt}
                       baseEndsAt={b.endsAt}
-                      slugKey={key}
+                      apiBase={apiBase}
                       onDone={() => void reload()}
                     />
-                  : null}
-                </li>
-              )
-            })}
+                  : null
+                }
+                onAccept={() => void acceptBooking(b.id)}
+                onDecline={() => void declineBooking(b.id)}
+                onCancel={() => void cancelBooking(b.id)}
+                onAcceptReschedule={() => void acceptRescheduleBooking(b.id)}
+                onDeclineReschedule={() => void declineBooking(b.id)}
+                onDone={() => void reload()}
+              />
+            ))}
           </ul>
-        }
+        : null}
 
-        {(!focusReservations && outgoing.length > 0) ? (
-          <div className="mt-3 border-t border-dc-border pt-3">
-            <p className="text-xs font-medium text-dc-muted">Scenes you requested (as guest)</p>
-            <ul className={`mt-2 space-y-2 text-xs text-dc-text-muted ${scrollList}`}>
-              {outgoing.map((b) => {
-                const hostProposedReschedule =
-                  b.status === 'RESCHEDULE_PENDING' && b.proposedByUserId === b.hostUserId
-                const guestProposedReschedule =
-                  b.status === 'RESCHEDULE_PENDING' && b.proposedByUserId === b.guestUserId
-                return (
-                  <li key={b.id} className="rounded-xl border border-dc-border bg-dc-elevated/95 p-3 text-sm text-dc-text-muted">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-dc-muted">{b.status}</p>
-                    <p>
-                      {new Date(b.startsAt).toLocaleString([], { timeZone: timezone })} –{' '}
-                      {new Date(b.endsAt).toLocaleTimeString([], { timeZone: timezone })}
-                    </p>
-                    <p className="mt-1 text-dc-text">{b.description}</p>
-                    {b.status === 'RESCHEDULE_PENDING' && b.proposedStartsAt ?
-                      <p className="mt-1 text-xs text-amber-200">
-                        Proposed window:{' '}
-                        {new Date(b.proposedStartsAt).toLocaleString([], { timeZone: timezone })} –{' '}
-                        {b.proposedEndsAt ?
-                          new Date(b.proposedEndsAt).toLocaleTimeString([], { timeZone: timezone })
-                        : ''}
-                      </p>
-                    : null}
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {b.status === 'PENDING' ?
-                        <button
-                          type="button"
-                          className="rounded-lg px-3 py-1.5 text-xs text-red-300 hover:underline"
-                          onClick={() => void cancelBooking(b.id)}
-                        >
-                          Withdraw request
-                        </button>
-                      : null}
-                      {hostProposedReschedule ?
-                        <>
-                          <button
-                            type="button"
-                            className="rounded-lg bg-dc-accent/18 px-3 py-1.5 text-xs font-medium text-dc-accent"
-                            onClick={() => void acceptRescheduleBooking(b.id)}
-                          >
-                            Accept new time
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-lg px-3 py-1.5 text-xs text-dc-text-muted hover:text-dc-text"
-                            onClick={() => void declineBooking(b.id)}
-                          >
-                            Decline reschedule
-                          </button>
-                        </>
-                      : null}
-                      {guestProposedReschedule ?
-                        <p className="text-xs text-dc-muted">Waiting for the host to confirm your proposed time.</p>
-                      : null}
-                      {b.status === 'ACCEPTED' || b.status === 'RESCHEDULE_PENDING' ?
-                        <button
-                          type="button"
-                          className="rounded-lg px-3 py-1.5 text-xs text-red-300 hover:underline"
-                          onClick={() => void cancelBooking(b.id)}
-                        >
-                          Cancel scene
-                        </button>
-                      : null}
-                    </div>
-                    {b.status === 'ACCEPTED' ?
+        {outgoing.length > 0 ?
+          <div className={sortedIncoming.length > 0 ? 'mt-3 border-t border-dc-border pt-3' : undefined}>
+            <p className="text-xs font-medium text-dc-muted">Scenes you requested</p>
+            <ul className={`mt-2 space-y-3 ${scrollList}`}>
+              {outgoing.map((b) => (
+                <SceneReservationCard
+                  key={b.id}
+                  booking={b}
+                  role="guest"
+                  timezone={timezone}
+                  apiBase={apiBase}
+                  allowDirectReschedule={isPlaySpace}
+                  allowNotesEdit={isPlaySpace}
+                  proposeRescheduleSlot={
+                    b.status === 'ACCEPTED' && scope.showReschedule ?
                       <RescheduleProposeForm
                         bookingId={b.id}
                         baseStartsAt={b.startsAt}
                         baseEndsAt={b.endsAt}
-                        slugKey={key}
+                        apiBase={apiBase}
                         onDone={() => void reload()}
                       />
-                    : null}
-                  </li>
-                )
-              })}
+                    : null
+                  }
+                  onCancel={() => void cancelBooking(b.id)}
+                  onAcceptReschedule={() => void acceptRescheduleBooking(b.id)}
+                  onDeclineReschedule={() => void declineBooking(b.id)}
+                  onDone={() => void reload()}
+                />
+              ))}
             </ul>
           </div>
-        ) : null}
+        : null}
       </section>
 
-      {!focusReservations ?
+      {!focusReservations && scope.showVolunteerTools ?
         <section className="space-y-2 rounded-xl border border-dc-border bg-dc-elevated/95/50 p-3">
           <h3 className="text-sm font-semibold text-dc-text">Open volunteer shifts</h3>
           <p className="text-[11px] text-dc-muted">Claim an open staff shift. It syncs to your dancecard calendar.</p>
@@ -929,7 +1095,7 @@ export default function ConventionDancecardPanel({
         </section>
       : null}
 
-      {!focusReservations ?
+      {!focusReservations && scope.showVolunteerTools ?
         <section className="space-y-2 rounded-xl border border-dc-border bg-dc-elevated/95/50 p-3">
           <h3 className="text-sm font-semibold text-dc-text">Shift swap requests</h3>
           <p className="text-[11px] text-dc-muted">
@@ -1006,130 +1172,6 @@ export default function ConventionDancecardPanel({
         </section>
       : null}
 
-      {focusReservations ?
-        null
-      : hourSlotsByDay.length === 0 ?
-        null
-      : (
-          <section className="space-y-2 rounded-xl border border-dc-border bg-dc-elevated/95/50 p-3">
-            <h3 className="text-sm font-semibold text-dc-text">Calendar by day</h3>
-            <p className="text-[11px] text-dc-muted">
-              Tap green hours to pre-fill Add busy time. Each column scrolls independently.
-            </p>
-
-            <div className={`grid gap-2 sm:grid-cols-2 lg:grid-cols-4 ${scrollPanel}`}>
-              {hourSlotsByDay.map(({ day, slots }) => {
-                const openCount = slots.filter((s) => s.open).length
-                const busyCount = slots.length - openCount
-                const dayStart = slots[0]?.slotStartIso
-                const dayEnd = slots.length > 0 ? slots[slots.length - 1]!.slotEndIso : null
-                return (
-                  <div
-                    key={day}
-                    className="flex min-h-0 flex-col rounded-lg border border-white/[0.08] bg-dc-elevated/95/40 p-2 sm:max-h-none"
-                  >
-                    <div className="mb-1.5 flex shrink-0 flex-wrap items-center justify-between gap-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-dc-accent/90">{day}</p>
-                      <div className="flex flex-wrap items-center gap-1">
-                        <span className="text-[10px] text-dc-muted">
-                          {busyCount} busy · {openCount} open
-                        </span>
-                        {dayStart && dayEnd ?
-                          <button
-                            type="button"
-                            className="rounded border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-200 hover:bg-emerald-500/16"
-                            onClick={() => prefillBlockForHour(dayStart, dayEnd)}
-                          >
-                            Block day
-                          </button>
-                        : null}
-                      </div>
-                    </div>
-
-                    <div className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-0.5 max-h-52 sm:max-h-60 [-webkit-overflow-scrolling:touch]">
-                      {slots.map((s) => (
-                        <button
-                          key={s.slotStartIso}
-                          type="button"
-                          onClick={() => {
-                            if (!s.open) return
-                            prefillBlockForHour(s.slotStartIso, s.slotEndIso)
-                          }}
-                          className={`w-full rounded-lg border px-2 py-1.5 text-left transition ${
-                            s.open
-                              ? 'border-emerald-500/25 bg-emerald-500/10 hover:border-emerald-500/40'
-                              : 'border-white/[0.10] bg-white/[0.03] hover:border-dc-border-strong'
-                          }`}
-                          disabled={!s.open}
-                        >
-                          <p className="text-xs font-medium tabular-nums text-dc-text">
-                            {new Date(s.slotStartIso).toLocaleTimeString([], {
-                              timeZone: timezone,
-                              hour: 'numeric',
-                            })}
-                          </p>
-                          <p className={`truncate text-[11px] leading-tight ${s.open ? 'text-emerald-200' : 'text-dc-text-muted'}`}>
-                            {s.open ? 'Open' : s.label}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
-
-      {!focusReservations ?
-        <details className="rounded-xl border border-amber-500/20 bg-amber-950/10 p-3" open={false}>
-          <summary className="cursor-pointer text-sm font-semibold text-dc-text">Share &amp; buffer</summary>
-          <div className="mt-3 space-y-3">
-            <p className="text-xs text-dc-muted">
-              Buffer adds trailing time after each commitment before you appear free. Share links only expose free windows.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {bufferOptions.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                    bufferMinutes === m
-                      ? 'bg-amber-600/90 text-black'
-                      : 'border border-dc-border text-dc-text-muted hover:border-white/30 hover:text-dc-text'
-                  }`}
-                  onClick={() => void saveBuffer(m)}
-                >
-                  {m === 0 ? 'No buffer' : `${m}m`}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="rounded-xl bg-dc-accent/18 px-4 py-2 text-sm font-medium text-dc-accent hover:bg-dc-accent/26"
-              onClick={() => void createShare()}
-            >
-              Create share link &amp; copy
-            </button>
-            {shares.filter((s) => !s.revokedAt).length > 0 ?
-              <ul className="space-y-1 text-xs">
-                {shares
-                  .filter((s) => !s.revokedAt)
-                  .map((s) => (
-                    <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dc-border p-2">
-                      <code className="text-dc-text-muted break-all">
-                        {`${window.location.origin}/conventions/${encodeURIComponent(slug)}/dancecard/s/${s.token}`}
-                      </code>
-                      <button type="button" className="text-red-300 hover:underline" onClick={() => void revokeShare(s.id)}>
-                        Revoke
-                      </button>
-                    </li>
-                  ))}
-              </ul>
-            : null}
-          </div>
-        </details>
-      : null}
       {confirmDialog}
     </div>
   )

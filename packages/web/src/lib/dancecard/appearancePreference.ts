@@ -5,7 +5,9 @@ export const DANCECARD_APPEARANCE_STORAGE_KEY = 'ecke-dancecard-appearance'
 const VALID_IDS = new Set<string>([
   'parchment',
   'midnight-velvet',
+  'black-velvet',
   'midnight-brass',
+  'velvet-rose',
   'lifted-ink',
   'coastal-slate',
   'high-noon',

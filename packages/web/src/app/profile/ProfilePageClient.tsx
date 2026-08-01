@@ -87,6 +87,7 @@ type RemoteProfileResponse = {
   }[]
   iso?: {
     body: string
+    structured?: unknown
     visibility: string
     acceptDmsViaIso: boolean
     updatedAt: string
@@ -153,7 +154,7 @@ export default function ProfilePageClient() {
     [selectTab],
   )
   const openPhotoGallery = useCallback(() => {
-    navigate('/profile/edit')
+    navigate('/profile/edit/photos')
   }, [navigate])
   const [storedProfile, setStoredProfile] = useState<ReturnType<typeof loadStoredProfile>>(null)
   const [remote, setRemote] = useState<RemoteProfileResponse | null>(null)
@@ -596,7 +597,8 @@ export default function ProfilePageClient() {
             photoDisplaySettings={ownerStoryProps.photoDisplaySettings}
             photoCount={ownerStoryProps.photoCount}
             onOpenGallery={ownerStoryProps.onOpenGallery}
-            managePhotosHref="/profile/edit"
+            managePhotosHref="/profile/edit/photos"
+            editProfileHref="/profile/edit"
             actions={ownerStoryProps.heroActions}
           />
       }
@@ -606,7 +608,8 @@ export default function ProfilePageClient() {
             photos={profilePhotos}
             viewer={{ authenticated: true, adultContentPref: ADULT_CONTENT_PREFERENCES.blur }}
             totalCount={profilePhotos.length}
-            managePhotosHref="/profile/edit"
+            onViewAll={() => selectTab('Media')}
+            managePhotosHref="/profile/edit/photos"
             viewerIsOwner
           />
         )
@@ -790,6 +793,7 @@ export default function ProfilePageClient() {
                   <ProfilePhotoManager
                     apiBacked={signedInLive}
                     embedded
+                    studioLinkOnly
                     basePhotos={useMockProfile ? (person?.profilePhotos ?? []) : []}
                     onPhotosChanged={refreshProfilePhotos}
                   />

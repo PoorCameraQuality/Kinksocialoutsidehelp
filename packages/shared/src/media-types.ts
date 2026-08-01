@@ -5,8 +5,12 @@ import { z } from 'zod'
  * Shared contract for API, workers, and web (browser-safe).
  */
 
-/** Max image upload size (profile photos, quarantine pipeline). */
-export const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024
+/**
+ * Max image upload size (profile photos, quarantine pipeline).
+ * Client compresses phone photos before POST; this is the wire backstop
+ * for browsers that cannot decode/re-encode (e.g. some HEIC cases).
+ */
+export const MAX_IMAGE_UPLOAD_BYTES = 20 * 1024 * 1024
 
 /** Max audio upload size (feed clips). */
 export const MAX_AUDIO_UPLOAD_BYTES = 25 * 1024 * 1024

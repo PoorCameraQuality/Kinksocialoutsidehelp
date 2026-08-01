@@ -15,6 +15,8 @@ export type MobileActionBarAction = {
 type Props = {
   /** Status or hint line above actions on mobile */
   status?: ReactNode
+  /** Extra block above the action row (e.g. length chips + location) */
+  body?: ReactNode
   primary: MobileActionBarAction
   secondary?: MobileActionBarAction
   /** Extra trailing control (e.g. Done link) */
@@ -78,7 +80,7 @@ function ActionControl({ action, className }: { action: MobileActionBarAction; c
  * Sticky primary actions for mobile — sits above bottom nav when present.
  * Desktop: inline flex row (no fixed positioning).
  */
-export default function MobileActionBar({ status, primary, secondary, trailing, className }: Props) {
+export default function MobileActionBar({ status, body, primary, secondary, trailing, className }: Props) {
   return (
     <div
       className={cn(
@@ -86,18 +88,21 @@ export default function MobileActionBar({ status, primary, secondary, trailing, 
         className,
       )}
     >
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-2.5 sm:px-6 md:px-0 md:py-0">
+      <div className="mx-auto max-w-7xl space-y-2 px-4 py-2.5 sm:px-6 md:px-0 md:py-0">
         {status ?
-          <p className="w-full min-w-0 truncate text-xs text-dc-muted sm:w-auto sm:flex-1" role="status">
+          <p className="w-full min-w-0 truncate text-xs text-dc-muted" role="status">
             {status}
           </p>
         : null}
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {secondary ?
-            <ActionControl action={{ ...secondary, variant: secondary.variant ?? 'secondary' }} />
-          : null}
-          <ActionControl action={primary} />
-          {trailing}
+        {body}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {secondary ?
+              <ActionControl action={{ ...secondary, variant: secondary.variant ?? 'secondary' }} />
+            : null}
+            <ActionControl action={primary} />
+            {trailing}
+          </div>
         </div>
       </div>
     </div>

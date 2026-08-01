@@ -17,12 +17,15 @@ import AppShell from '@/components/shell/AppShell'
 import CreateFab from '@/components/shell/CreateFab'
 import CreateSheet from '@/components/shell/CreateSheet'
 import InAppBrowserBanner from '@/components/shell/InAppBrowserBanner'
+import DancecardApexRedirect from '@/components/play/DancecardApexRedirect'
+import DancecardInstallBanner from '@/components/play/DancecardInstallBanner'
 import { CreateSheetProvider } from '@/contexts/CreateSheetContext'
 import { FeedComposerUiProvider, useFeedComposerEngaged } from '@/contexts/FeedComposerUiContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { hideMarketingFooterOnMobile } from '@/lib/community-nav'
 import { hideMockDataBannerForPath } from '@/lib/focused-personal-shell'
 import { isTierAAppShellRoute, showCreateFabForPath } from '@/lib/app-shell-routes'
+import { isGuestDancecardSharePath } from '@/lib/guest-dancecard-share'
 import { mobileMainPadClass, suppressMobileBottomNav, suppressMobileCreateFab } from '@/lib/mobile-chrome'
 import { useMaxLg } from '@/hooks/useMaxLg'
 
@@ -32,10 +35,11 @@ function RootLayoutInner() {
   const [searchParams] = useSearchParams()
   const { isAuthenticated, isFallback } = useAuth()
   const maxLg = useMaxLg()
-  const showMemberChrome = isAuthenticated && !isFallback
+  const guestShare = isGuestDancecardSharePath(pathname)
+  const showMemberChrome = isAuthenticated && !isFallback && !guestShare
   const hideFooterMobile = hideMarketingFooterOnMobile(pathname)
-  const hideMarketingFooter = showMemberChrome
-  const suppressBottomNav = suppressMobileBottomNav(pathname, searchParams)
+  const hideMarketingFooter = showMemberChrome || guestShare
+  const suppressBottomNav = suppressMobileBottomNav(pathname, searchParams) || guestShare
   const useAppShell = showMemberChrome && isTierAAppShellRoute(pathname)
   const showMobileChrome = maxLg
   const composerEngaged = useFeedComposerEngaged()
@@ -47,7 +51,11 @@ function RootLayoutInner() {
     !suppressMobileCreateFab(pathname) &&
     !composerEngaged
 
-  const mainMobilePadClass = showMemberChrome ? mobileMainPadClass(pathname, showCreateFab, searchParams) : 'pb-0'
+  const mainMobilePadClass = guestShare
+    ? 'pb-0'
+    : showMemberChrome
+      ? mobileMainPadClass(pathname, showCreateFab, searchParams)
+      : 'pb-0'
 
   const pageContent = (
     <AuthGate>
@@ -64,6 +72,7 @@ function RootLayoutInner() {
   return (
     <>
       <AppRobotsMeta />
+      <DancecardApexRedirect />
       <InAppBrowserBanner />
       <a
         href="#main-content"
@@ -71,28 +80,29 @@ function RootLayoutInner() {
       >
         Skip to main content
       </a>
-      {showMemberChrome ? <Header /> : null}
+      {showMemberChrome && !guestShare ? <Header /> : null}
       <ScrollToTopOnNavigate />
       <RouteNavigationPending />
-      <CommunityNavBar />
-      {!hideMockDataBannerForPath(pathname) ? <MockDataBanner /> : null}
-      <StripePaymentsAnnouncementBanner />
+      {guestShare ? null : <CommunityNavBar />}
+      {!guestShare && !hideMockDataBannerForPath(pathname) ? <MockDataBanner /> : null}
+      {guestShare ? null : <StripePaymentsAnnouncementBanner />}
       {showMemberChrome ? <EmailVerifyNudgeBanner /> : null}
       <main
         id="main-content"
-        className={`min-h-screen min-w-0 overflow-x-hidden lg:pb-0 ${mainMobilePadClass}`}
+        className={`${guestShare ? 'min-h-dvh' : 'min-h-screen'} min-w-0 overflow-x-hidden lg:pb-0 ${mainMobilePadClass}`}
       >
         {pageContent}
       </main>
-      {hideMarketingFooter || pathname === '/' ? null : (
+      {hideMarketingFooter || pathname === '/' || guestShare ? null : (
         <div className={hideFooterMobile ? 'hidden md:block' : undefined}>
           <Footer />
         </div>
       )}
       <CreateFab show={showCreateFab} />
-      <CreateSheet />
+      {guestShare ? null : <CreateSheet />}
       {showMobileChrome && !suppressBottomNav ? <BottomNav /> : null}
-      <CreateFlowModal />
+      {guestShare ? null : <DancecardInstallBanner />}
+      {guestShare ? null : <CreateFlowModal />}
     </>
   )
 }

@@ -77,8 +77,8 @@ export default function EventMatchmakerSettingsSection({ eventId, canEdit }: Pro
       <div>
         <h3 className="text-sm font-semibold text-dc-text uppercase tracking-wide">Event matchmaker</h3>
         <p className="mt-1 text-xs text-dc-muted">
-          Let attendees opt in to a swipe-style deck on the public event page. Enable before promoting matchmaker to
-          guests.
+          Pickup-play quiz: moods, sexual vs non-sexual intent, flavors, STI disclosure prefs, and complementary
+          lead/follow. Attendees get a ranked swipe deck on the Matchmaker tab.
         </p>
       </div>
 
@@ -128,10 +128,10 @@ export default function EventMatchmakerSettingsSection({ eventId, canEdit }: Pro
               {busy ? 'Saving…' : 'Save matchmaker settings'}
             </button>
             <Link
-              to={`/events/${encodeURIComponent(eventId)}`}
+              to={`/events/${encodeURIComponent(eventId)}?tab=Matchmaker`}
               className="text-xs text-dc-muted hover:text-dc-accent"
             >
-              View public event page
+              Open Matchmaker tab
             </Link>
           </div>
         </>

@@ -1,62 +1,71 @@
 # Contributing
 
-Thanks for looking at this. I'm not a professional open-source maintainer — these notes are just so we don't step on the same rakes.
+Thanks for helping with Kink.social. This guide is for engineers working in the active monorepo.
 
-## Before you dig in
+## Before you change code
 
-1. Get local running from [README.md](README.md) / [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
-2. Skim [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/DOMAIN_GLOSSARY.md](docs/DOMAIN_GLOSSARY.md) if you're touching privacy or auth.
-3. Search for the thing you want to change before adding a second copy of it. There's already a lot of surface area.
+1. Read [README.md](README.md) and [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
+2. Skim [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/DOMAIN_GLOSSARY.md](docs/DOMAIN_GLOSSARY.md).
+3. Search existing routes, tables, and hooks for the feature noun before adding a parallel path.
+4. Prefer extending what already exists over a second schema, route stack, or UI flow.
 
-## Where the real code is
+## Active code
+
+Work in:
 
 - `packages/web`
 - `packages/api`
 - `packages/shared`
-- `docker/` and the compose files if you're changing how it runs
+- `scripts/`, `e2e/`, `docker/`, and `.github/workflows` when needed
 
-## Local loop
+Do not treat root `src/`, `legacy/`, or `vendor/` as the live application.
+
+## Development workflow
 
 ```bash
+# Local development
 docker compose -f docker-compose.dev.yml up -d
 npm install
 npm run db:prepare
 npm run dev
 ```
 
-Node 20 preferred.
+Use Node 20.
 
-Before you send changes:
+Before opening a PR that changes behavior:
 
 ```bash
 npm run typecheck
 npm run lint
-npm run build
 npm run test
-npm run check:dc-classes -w web
 ```
 
-Lint is web-only today. See [docs/TESTING.md](docs/TESTING.md).
+Also run the Playwright or domain scripts that cover the area you touched. See [docs/TESTING.md](docs/TESTING.md).
 
-## Stuff that matters (learned the hard way)
+## Coding rules that matter here
 
-- One `users` row per person. Store UUID `user_id`, not usernames, on writes.
-- Privacy/auth has to be enforced on the API. Hiding a button in the UI is not enough.
-- If REST visibility changes, update WebSocket subscribe auth in the same change.
-- Email / sync / mod jobs should go through BullMQ after commit. Don't pile new side effects into route handlers.
-- Org tickets / vendor sales go through Stripe Connect per org or vendor. See `docs/adr/006-stripe-connect-per-org.md`.
-- ECKE is outbound publish only. Don't invent inbound ECKE login.
-- Schema changes need a migration and a plan for rollback. Add tests when you can.
-- Don't weaken auth, privacy, upload checks, rate limits, or moderation just to make a test green.
+- One `users` row per person. Store UUID `user_id` on writes, not display usernames.
+- Enforce privacy and authorization on the API. UI hints are not enough.
+- When REST visibility changes, update WebSocket subscribe auth in the same change.
+- Side effects such as email, sync, push, and moderation jobs belong in BullMQ after commit. Do not add new inline side effects in route handlers.
+- Payments for org tickets and vendor sales use per-org / per-vendor Stripe Connect. See `docs/adr/006-stripe-connect-per-org.md`.
+- ECKE publishing is outbound only. Do not invent inbound ECKE member auth.
+- Schema changes need a migration, compatibility note, rollback idea, and tests.
+- Do not weaken auth, privacy, upload validation, rate limits, or moderation to make a test pass.
 
-## Auth helper
+## Auth helpers
 
-Prefer `requireAuthenticatedDbUser` (UUID only) on mutating / DB routes. Some older files still have a local `requireUser` wrapper. Migrate those when you touch them. Don't use a non-UUID session `sub` as a database id.
+Mutating and DB-backed routes should use `requireAuthenticatedDbUser` (UUID only). Some older modules still wrap this in a local `requireUser`. Migrate those file by file. Do not fall back to a non-UUID session `sub` as a foreign key.
 
-## PRs
+## Pull requests
 
-Keep them small if you can. Say what you changed, how you tested it, and if migrations/env/privacy/auth/media/ECKE are involved.
+Keep PRs focused. Include:
 
-## Security bugs
+- What changed and why
+- How you tested it
+- Any migration or env impact
+- Notes for privacy, auth, media, or ECKE when those areas are touched
 
-Don't open a public issue for something exploitable. See [SECURITY.md](SECURITY.md).
+## Security issues
+
+Do not open a public issue for exploitable vulnerabilities. See [SECURITY.md](SECURITY.md).

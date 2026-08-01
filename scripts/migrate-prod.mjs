@@ -23,5 +23,5 @@ if (pushCode !== 0) {
 
 run('npm', ['run', 'db:migrate-hub-ext', '-w', '@c2k/api'])
 run('npm', ['run', 'db:migrate-incremental', '-w', '@c2k/api'])
+run('npm', ['run', 'db:migrate-organizer-parity', '-w', '@c2k/api'])
 console.log('Production migrations complete.')
-

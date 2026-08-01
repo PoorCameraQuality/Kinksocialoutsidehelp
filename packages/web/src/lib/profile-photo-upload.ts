@@ -2,9 +2,11 @@ import {
   getProfilePhotoUploadFeedback,
   isProfilePhotoPendingReviewStatus,
   MEDIA_UPLOAD_STATUSES,
+  MAX_IMAGE_UPLOAD_BYTES,
   PROFILE_PHOTO_PENDING_REVIEW_MESSAGE,
   type ProfilePhotoDisplaySettings,
 } from '@c2k/shared'
+import { compressImageForUpload } from '@/lib/compress-image-for-upload'
 
 export type ProfilePhotoUploadResult = {
   url: string | null
@@ -82,9 +84,18 @@ export async function uploadProfilePhotoFile(
   file: File,
   opts?: { signal?: AbortSignal },
 ): Promise<ProfilePhotoUploadResult> {
+  const prepared = await compressImageForUpload(file)
+  const uploadFile = prepared.file
+  if (uploadFile.size > MAX_IMAGE_UPLOAD_BYTES) {
+    return {
+      ...emptyUploadResult(file),
+      error: `Photo is too large after prep (max ${Math.floor(MAX_IMAGE_UPLOAD_BYTES / 1024 / 1024)} MB). Try a smaller image.`,
+    }
+  }
+
   const fd = new FormData()
   fd.append('purpose', 'profile_photo')
-  fd.append('file', file)
+  fd.append('file', uploadFile)
   const r = await fetchWithTimeout('/api/upload', {
     method: 'POST',
     body: fd,
@@ -114,11 +125,11 @@ export async function uploadProfilePhotoFile(
     url: typeof j.url === 'string' ? j.url : null,
     quarantineKey: j.quarantineKey ?? j.key ?? null,
     sha256: j.sha256 ?? null,
-    mimeType: j.mimeType || file.type || 'image/jpeg',
-    sizeBytes: j.sizeBytes ?? file.size,
+    mimeType: j.mimeType || uploadFile.type || 'image/jpeg',
+    sizeBytes: j.sizeBytes ?? uploadFile.size,
     originalFilename: file.name,
-    imageWidth: j.width,
-    imageHeight: j.height,
+    imageWidth: j.width ?? prepared.width,
+    imageHeight: j.height ?? prepared.height,
   }
 }
 

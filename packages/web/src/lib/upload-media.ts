@@ -1,3 +1,6 @@
+import { MAX_IMAGE_UPLOAD_BYTES } from '@c2k/shared'
+import { compressImageForUpload } from '@/lib/compress-image-for-upload'
+
 export type UploadMediaResult = {
   /** File received and staged for scan — not a moderation hold. */
   status: 'staged' | 'url'
@@ -14,13 +17,30 @@ export function isStagedUploadResult(status: string | undefined): boolean {
   return status === 'staged' || status === 'quarantined'
 }
 
+function shouldCompressForPurpose(file: File, purpose: string): boolean {
+  if (file.type.startsWith('audio/') || file.type.startsWith('video/')) return false
+  if (purpose.includes('audio') || purpose.includes('video')) return false
+  return file.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name)
+}
+
 /** Upload a single image via `POST /api/upload` with explicit purpose. */
 export async function uploadMediaFile(
   file: File,
   purpose: string,
 ): Promise<UploadMediaResult> {
+  let uploadFile = file
+  if (shouldCompressForPurpose(file, purpose)) {
+    const prepared = await compressImageForUpload(file)
+    uploadFile = prepared.file
+    if (uploadFile.size > MAX_IMAGE_UPLOAD_BYTES) {
+      throw new Error(
+        `Image is too large after prep (max ${Math.floor(MAX_IMAGE_UPLOAD_BYTES / 1024 / 1024)} MB). Try a smaller image.`,
+      )
+    }
+  }
+
   const fd = new FormData()
-  fd.append('file', file)
+  fd.append('file', uploadFile)
   fd.append('purpose', purpose)
   const r = await fetch('/api/upload', { method: 'POST', credentials: 'include', body: fd })
   const data = (await r.json().catch(() => ({}))) as {

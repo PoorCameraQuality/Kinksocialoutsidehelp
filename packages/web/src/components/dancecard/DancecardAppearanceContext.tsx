@@ -9,16 +9,26 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useLocation } from 'react-router-dom'
 import '@/styles/site-atmosphere.css'
 import {
   DANCECARD_APPEARANCE_PRESETS,
   DEFAULT_DANCECARD_APPEARANCE,
+  PLAY_SURFACE_APPEARANCE,
   getAppearancePreset,
   appearanceVarsToStyle,
   applyAppearanceVarsToElement,
   type DancecardAppearanceId,
   type DancecardAppearancePreset,
 } from '@/lib/dancecard/appearancePresets'
+import { shouldForcePlaySurfaceAppearance } from '@/lib/dancecard-host'
+
+/** Black Velvet on dancecard stay-paths (/play, chat, me), plus sticky Messages/Me on apex preview. */
+function usePlaySurfaceForcedAppearance(): DancecardAppearanceId | null {
+  const { pathname, search } = useLocation()
+  if (shouldForcePlaySurfaceAppearance(pathname, search)) return PLAY_SURFACE_APPEARANCE
+  return null
+}
 
 export type { DancecardAppearancePreset }
 import {
@@ -79,6 +89,8 @@ export function DancecardAppearanceProvider({
     readStoredAppearance(defaultAppearanceId),
   )
   const [hydrated, setHydrated] = useState(false)
+  const forcedSurfaceId = usePlaySurfaceForcedAppearance()
+  const effectiveAppearanceId = forcedSurfaceId ?? appearanceId
 
   useEffect(() => {
     setAppearanceIdState(readStoredAppearance(defaultAppearanceId))
@@ -90,27 +102,33 @@ export function DancecardAppearanceProvider({
     writeStoredAppearance(id)
   }, [])
 
-  const preset = useMemo(() => getAppearancePreset(appearanceId), [appearanceId])
+  const preset = useMemo(() => getAppearancePreset(effectiveAppearanceId), [effectiveAppearanceId])
   const appearanceStyle = useMemo(() => appearanceVarsToStyle(preset.vars, preset.mode), [preset])
 
   useEffect(() => {
     if (!hydrated) return
     const root = document.documentElement
-    root.setAttribute('data-dc-appearance', appearanceId)
+    root.setAttribute('data-dc-appearance', effectiveAppearanceId)
     root.dataset.dcTheme = 'event'
     root.style.colorScheme = preset.mode
     const clearVars = applyAppearanceVarsToElement(root, preset.vars)
+    const themeMeta = document.querySelector('meta[name="theme-color"]')
+    const prevTheme = themeMeta?.getAttribute('content') ?? null
+    if (themeMeta && forcedSurfaceId) {
+      themeMeta.setAttribute('content', preset.vars['--dc-surface'] ?? '#070708')
+    }
     return () => {
       clearVars()
       root.removeAttribute('data-dc-appearance')
       delete root.dataset.dcTheme
       root.style.removeProperty('color-scheme')
+      if (themeMeta && prevTheme != null) themeMeta.setAttribute('content', prevTheme)
     }
-  }, [hydrated, appearanceId, preset])
+  }, [hydrated, effectiveAppearanceId, preset, forcedSurfaceId])
 
   const value = useMemo<DancecardAppearanceContextValue>(
     () => ({
-      appearanceId,
+      appearanceId: effectiveAppearanceId,
       preset,
       presets: availablePresets,
       setAppearanceId,
@@ -118,13 +136,13 @@ export function DancecardAppearanceProvider({
       isDark: preset.mode === 'dark',
       appearanceReady: hydrated,
     }),
-    [appearanceId, preset, availablePresets, setAppearanceId, appearanceStyle, hydrated],
+    [effectiveAppearanceId, preset, availablePresets, setAppearanceId, appearanceStyle, hydrated],
   )
 
   const chromeProps = {
     className: `dc-gold-chrome site-atmosphere min-h-screen bg-dc-surface text-dc-text ${chromeClassName} ${className}`.trim(),
     'data-dc-theme': 'event' as const,
-    'data-dc-appearance': appearanceId,
+    'data-dc-appearance': effectiveAppearanceId,
     style: hydrated ? appearanceStyle : undefined,
     suppressHydrationWarning: true as const,
   }

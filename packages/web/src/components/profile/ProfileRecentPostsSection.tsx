@@ -19,6 +19,8 @@ type Props = {
   onFollow?: () => void
   onConnect?: () => void
   className?: string
+  /** Cap previews (Overview uses 2; Posts tab can pass a higher limit). */
+  limit?: number
 }
 
 export default function ProfileRecentPostsSection({
@@ -34,8 +36,9 @@ export default function ProfileRecentPostsSection({
   onFollow,
   onConnect,
   className = '',
+  limit = 2,
 }: Props) {
-  const posts = items.map(apiPostToHomeFeedPost)
+  const posts = items.slice(0, limit).map(apiPostToHomeFeedPost)
 
   const publicActions = [
     onFollow ?

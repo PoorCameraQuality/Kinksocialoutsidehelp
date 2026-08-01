@@ -522,30 +522,23 @@ export async function syncMediaItemAsAvatar(userId: string, profileId: string, m
     .set({ useAsAvatar: true, updatedAt: new Date() })
     .where(eq(schema.mediaItems.id, mediaItemId))
 
-  await db
-    .update(schema.profiles)
-    .set({ avatarUrl: url, updatedAt: new Date() })
-    .where(eq(schema.profiles.id, profileId))
-
-  const [existingPhoto] = await db
-    .select()
-    .from(schema.profilePhotos)
-    .where(eq(schema.profilePhotos.mediaAssetId, item.mediaAssetId))
-    .limit(1)
-
-  if (!existingPhoto) {
-    await db.insert(schema.profilePhotos).values({
+  // Single primary-photo path: create/reuse profile_photos row + demote + sync avatar_url
+  const { ensureProfilePhotoAndSetPrimary, SetPrimaryProfilePhotoError } = await import(
+    './set-primary-profile-photo.js'
+  )
+  try {
+    await ensureProfilePhotoAndSetPrimary({
       profileId,
       mediaAssetId: item.mediaAssetId,
+      actorUserId: userId,
       url,
       caption: item.caption,
-      sortOrder: 0,
     })
-  } else {
-    await db
-      .update(schema.profilePhotos)
-      .set({ url, sortOrder: 0 })
-      .where(eq(schema.profilePhotos.id, existingPhoto.id))
+  } catch (err) {
+    if (err instanceof SetPrimaryProfilePhotoError) {
+      throw new MediaSocialError(err.message)
+    }
+    throw err
   }
 
   if (profileAlbum) {

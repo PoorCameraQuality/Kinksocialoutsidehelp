@@ -1,0 +1,25 @@
+{
+  "name": "Dancecard",
+  "short_name": "Dancecard",
+  "description": "Schedule your kink fun with ease. Share availability, compare schedules, and reserve scenes on Kink Social.",
+  "start_url": "/play",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#070708",
+  "theme_color": "#D83F78",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/og-dancecard.png",
+      "sizes": "1024x576",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/og-dancecard.png",
+      "sizes": "1024x576",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

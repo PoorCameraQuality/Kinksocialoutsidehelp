@@ -1,5 +1,8 @@
+import { isGuestDancecardSharePath } from '@/lib/guest-dancecard-share'
+
 /** Routes where the member bottom nav should not appear (focused flows). */
 export function suppressMobileBottomNav(pathname: string, search?: URLSearchParams | null): boolean {
+  if (isGuestDancecardSharePath(pathname)) return true
   if (pathname.startsWith('/onboarding')) return true
   if (pathname.startsWith('/verify-email')) return true
   if (pathname.startsWith('/profile/edit')) return true
@@ -18,6 +21,10 @@ export function hasMobileStickyActionBar(pathname: string): boolean {
   if (pathname.startsWith('/conventions/') && pathname.split('/').filter(Boolean).length === 2) {
     return true
   }
+  // Play space hub — Compare reserve funnel uses MobileActionBar on small screens
+  if (pathname.startsWith('/play/') && pathname.split('/').filter(Boolean).length === 2) {
+    return true
+  }
   if (!pathname.startsWith('/events/')) return false
   if (pathname === '/events/create' || pathname.startsWith('/events/create/')) return false
   return true
@@ -25,6 +32,7 @@ export function hasMobileStickyActionBar(pathname: string): boolean {
 
 /** Hide mobile FAB where a route supplies its own sticky bottom actions. */
 export function suppressMobileCreateFab(pathname: string): boolean {
+  if (isGuestDancecardSharePath(pathname)) return true
   if (pathname.startsWith('/profile/edit')) return true
   if (hasMobileStickyActionBar(pathname)) return true
   return false

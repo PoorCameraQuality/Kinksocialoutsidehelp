@@ -69,12 +69,16 @@ function requireAuthSecret(reply: FastifyReply): boolean {
 }
 
 function sessionCookieOptions(maxAge?: number) {
+  // Optional shared parent domain (e.g. `.kink.social`) so dancecard.kink.social
+  // can send c2k_session when CORS allows that origin. Host-only when unset.
+  const cookieDomain = process.env.COOKIE_DOMAIN?.trim() || undefined
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
     path: '/',
     // Secure on production + staging (HTTPS runtimes), not only NODE_ENV=production.
     secure: isStrictScannerRuntime(),
+    ...(cookieDomain ? { domain: cookieDomain } : {}),
     ...(maxAge !== undefined ? { maxAge } : {}),
   }
 }

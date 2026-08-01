@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import UserAvatar from '@/components/UserAvatar'
 import { shellDirectoryClass } from '@/lib/shell-contract'
 import { cn } from '@/lib/cn'
@@ -10,7 +10,14 @@ import StatusBanner from '@/components/ui/StatusBanner'
 import MessagingEmptyPanel from '@/components/messaging/MessagingEmptyPanel'
 import MessagingFolderTabs from '@/components/messaging/MessagingFolderTabs'
 import MessagingInboxFilters, { type InboxFilter } from '@/components/messaging/MessagingInboxFilters'
+import MessagingRoomsPanel from '@/components/messaging/MessagingRoomsPanel'
 import MessagingSafetyPanel from '@/components/messaging/MessagingSafetyPanel'
+import {
+  hasDancecardProductChrome,
+  isDancecardHost,
+  isPlayPath,
+} from '@/lib/dancecard-host'
+import type { SelectedChatRoom } from '@/hooks/useMyChatRooms'
 import ReportAction from '@/components/moderation/ReportAction'
 import CommunityTrustChip from '@/components/trust/CommunityTrustChip'
 import DmTrustContext from '@/components/trust/DmTrustContext'
@@ -19,6 +26,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useMaxMd } from '@/hooks/useMaxMd'
 import { useVisualViewportBottomInset } from '@/hooks/useVisualViewportBottomInset'
 import { markConversationRead } from '@/lib/mark-conversation-read'
+import { consumeIsoComposerContext, isoComposerPrefill } from '@/lib/iso-conversation'
 import {
   MESSAGING_EMPTY_INBOX_BODY,
   MESSAGING_EMPTY_INBOX_TITLE,
@@ -77,8 +85,14 @@ function initialMockMessagesByConversation(): Record<string, ChatMsg[]> {
 export default function MessagingPage() {
   const convSearchId = useId()
   const messageInputId = useId()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const { isAuthenticated, status, viewerUserId } = useAuth()
+  const dancecardSurface =
+    isDancecardHost() || isPlayPath(location.pathname) || hasDancecardProductChrome()
+  const inboxSurface: 'dms' | 'rooms' =
+    dancecardSurface && searchParams.get('view') === 'rooms' ? 'rooms' : 'dms'
+  const [selectedRoom, setSelectedRoom] = useState<SelectedChatRoom | null>(null)
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [messageText, setMessageText] = useState('')
   const [convSearch, setConvSearch] = useState('')
@@ -111,8 +125,10 @@ export default function MessagingPage() {
   const threadMenuRef = useRef<HTMLDivElement>(null)
   const [threadMenuOpen, setThreadMenuOpen] = useState(false)
   const isMobile = useMaxMd()
-  const inMobileThread = isMobile && Boolean(selectedConversation)
-  const keyboardInset = useVisualViewportBottomInset(inMobileThread)
+  const inMobileDmThread = isMobile && inboxSurface === 'dms' && Boolean(selectedConversation)
+  const inMobileRoomThread = isMobile && inboxSurface === 'rooms' && Boolean(selectedRoom)
+  const inMobileThread = inMobileDmThread || inMobileRoomThread
+  const keyboardInset = useVisualViewportBottomInset(inMobileDmThread)
   const [deepLinkError, setDeepLinkError] = useState<string | null>(null)
   const [deepLinkBusy, setDeepLinkBusy] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
@@ -273,6 +289,30 @@ export default function MessagingPage() {
           if (folder === 'main') next.delete('folder')
           else next.set('folder', folder)
           if (clearConversation) next.delete('c')
+          next.delete('view')
+          return next
+        },
+        { replace: true },
+      )
+    },
+    [setSearchParams],
+  )
+
+  const setInboxSurface = useCallback(
+    (surface: 'dms' | 'rooms') => {
+      setSelectedConversation(null)
+      setSelectedRoom(null)
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          if (surface === 'rooms') {
+            next.set('view', 'rooms')
+            next.delete('c')
+            next.delete('folder')
+          } else {
+            next.delete('view')
+            next.delete('room')
+          }
           return next
         },
         { replace: true },
@@ -458,6 +498,16 @@ export default function MessagingPage() {
       unread: false,
     } satisfies ConvRow
   }, [selectedConversation, conversationRows, pendingConversation, partnerUsernameByConvId])
+  useEffect(() => {
+    if (!activeConv?.id || messageText.trim()) return
+    const ctx = consumeIsoComposerContext(activeConv.id)
+    if (!ctx) return
+    const prefill = isoComposerPrefill(ctx)
+    if (prefill) setMessageText(prefill)
+    // Only seed once when opening an ISO-entry thread.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot prefill
+  }, [activeConv?.id])
+
   const activePartnerUsername = activeConv ?
     activeConv.partnerUsername?.trim() ||
     partnerUsernameByConvId[activeConv.id]?.trim() ||
@@ -628,8 +678,14 @@ export default function MessagingPage() {
         <header className="mb-1 shrink-0 sm:mb-2">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-dc-text sm:text-2xl">Messages</h1>
-              <p className="mt-0.5 hidden text-sm text-dc-text-muted sm:block">{MESSAGING_INBOX_INTRO}</p>
+              <h1 className="text-xl font-bold tracking-tight text-dc-text sm:text-2xl">
+                {dancecardSurface ? 'Chat & Messages' : 'Messages'}
+              </h1>
+              <p className="mt-0.5 hidden text-sm text-dc-text-muted sm:block">
+                {dancecardSurface ?
+                  'Direct messages plus play space lounges and convention rooms.'
+                : MESSAGING_INBOX_INTRO}
+              </p>
             </div>
             <Link
               to="/support"
@@ -638,10 +694,38 @@ export default function MessagingPage() {
               Help
             </Link>
           </div>
+          {dancecardSurface ?
+            <div className="mt-3 flex gap-1.5" role="tablist" aria-label="Chat and messages">
+              {(
+                [
+                  ['dms', 'Messages'],
+                  ['rooms', 'Rooms'],
+                ] as const
+              ).map(([id, label]) => {
+                const selected = inboxSurface === id
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => setInboxSurface(id)}
+                    className={`min-h-10 flex-1 rounded-xl text-sm font-semibold transition-colors sm:flex-none sm:px-5 ${
+                      selected ?
+                        'bg-dc-accent text-dc-accent-foreground'
+                      : 'border border-dc-border bg-dc-elevated text-dc-muted hover:text-dc-text'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          : null}
         </header>
       : null}
-      {!inMobileThread ? <MessagingSafetyPanel variant="banner" /> : null}
-      {loadError && isAuthenticated ? <LoadErrorBanner className="mb-2 shrink-0" message={loadError} onRetry={() => void loadConversations()} /> : null}
+      {!inMobileThread && inboxSurface === 'dms' ? <MessagingSafetyPanel variant="banner" /> : null}
+      {loadError && isAuthenticated && inboxSurface === 'dms' ? <LoadErrorBanner className="mb-2 shrink-0" message={loadError} onRetry={() => void loadConversations()} /> : null}
       {deepLinkError && isAuthenticated ?
         <StatusBanner tone="error" className="mb-2">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -666,6 +750,15 @@ export default function MessagingPage() {
 
       <div className={cn('flex min-h-0 flex-1 gap-4 overflow-hidden', inMobileThread && 'gap-0')}>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden rounded-2xl border border-dc-border bg-dc-elevated/95 max-md:rounded-none max-md:border-0 lg:flex-row">
+        {dancecardSurface && inboxSurface === 'rooms' ?
+          <MessagingRoomsPanel
+            selected={selectedRoom}
+            onSelect={setSelectedRoom}
+            enabled={isAuthenticated && status === 'ready'}
+          />
+        : null}
+        {inboxSurface === 'dms' ?
+        <>
         <aside
           className={`flex w-full shrink-0 flex-col border-b border-dc-border lg:w-[min(100%,340px)] lg:border-b-0 lg:border-r ${
             selectedConversation ? 'hidden lg:flex' : 'flex'
@@ -678,6 +771,7 @@ export default function MessagingPage() {
               onChange={setFolderInUrl}
               counts={isAuthenticated ? folderCounts : undefined}
               showHint={!inboxHasMessages || inboxFolder !== 'main'}
+              hideIso={dancecardSurface}
             />
             <MessagingInboxFilters
               inboxFilter={inboxFilter}
@@ -1073,11 +1167,15 @@ export default function MessagingPage() {
             </div>
           )}
         </main>
+        </>
+        : null}
         </div>
 
-        <aside id="messaging-safety" className="hidden w-[280px] shrink-0 xl:block" aria-label="Messaging safety">
-          <MessagingSafetyPanel defaultOpen={false} />
-        </aside>
+        {inboxSurface === 'dms' ?
+          <aside id="messaging-safety" className="hidden w-[280px] shrink-0 xl:block" aria-label="Messaging safety">
+            <MessagingSafetyPanel defaultOpen={false} />
+          </aside>
+        : null}
       </div>
     </div>
   )

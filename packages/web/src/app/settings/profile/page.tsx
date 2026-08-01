@@ -35,7 +35,7 @@ export default function SettingsProfilePage() {
       </Panel>
 
       <Panel>
-        <SectionHeader eyebrow="Sections" title="Edit profile tabs" description="Jump straight to a section." />
+        <SectionHeader eyebrow="Sections" title="Edit profile sections" description="Jump straight to a section." />
         <ul className="mt-4 divide-y divide-dc-border rounded-xl border border-dc-border">
           {PROFILE_EDIT_TABS.map((tab) => (
             <li key={tab.id}>

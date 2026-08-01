@@ -24,6 +24,13 @@ import MediaSubmitPage from './app/media/submit/page'
 import CreatePage from './app/create/page'
 import EventsPage from './app/events/page'
 import EventDetailPage from './app/events/[id]/page'
+import PlaySpacesDirectoryPage from './app/play/page'
+import PlayMySchedulePage from './app/play/schedule/page'
+import PlaySpaceDetailPage from './app/play/[slug]/page'
+import PlaySpaceSharePage from './app/play/[slug]/s/[token]/page'
+import PlaySpaceProgramManagePage from './app/play/[slug]/program/manage/page'
+import PlaySpaceReservationsPage from './app/play/[slug]/reservations/page'
+import PlaySpaceReservationDetailPage from './app/play/[slug]/reservations/[id]/page'
 import GroupsPage from './app/groups/page'
 import GroupOnboardingPage from './app/groups/onboarding/page'
 import GroupDetailPage from './app/groups/[id]/page'
@@ -43,14 +50,11 @@ import PlaceDetailPage from './app/places/[slug]/page'
 import PrivacyPage from './app/privacy/page'
 import ProfilePage from './app/profile/page'
 import ProfileEditLayout from './app/profile/edit/ProfileEditLayout'
-import ProfileBasicsPanel from '@/components/profile/edit/ProfileBasicsPanel'
-import AboutPanel from '@/components/profile/edit/AboutPanel'
-import LookingForPanel from '@/components/profile/edit/LookingForPanel'
+import OverviewPanel from '@/components/profile/edit/OverviewPanel'
 import CommunityIdentityPanel from '@/components/profile/edit/CommunityIdentityPanel'
-import RelationshipsPanel from '@/components/profile/edit/RelationshipsPanel'
 import InterestsPanel from '@/components/profile/edit/InterestsPanel'
-import PrivacyPanel from '@/components/profile/edit/PrivacyPanel'
-import WebsitesPanel from '@/components/profile/edit/WebsitesPanel'
+import PhotosStudioPanel from '@/components/profile/edit/PhotosStudioPanel'
+import PresencePanel from '@/components/profile/edit/PresencePanel'
 import ProfileUsernamePage from './app/profile/[username]/page'
 import OnboardingPage from './app/onboarding/page'
 import VerifyEmailPage from './app/verify-email/page'
@@ -180,6 +184,13 @@ export const router = createBrowserRouter([
       { path: 'explore/people', element: <Navigate to="/people" replace /> },
       { path: 'events', element: <EventsPage /> },
       { path: 'events/:id', element: <EventDetailPage /> },
+      { path: 'play', element: <PlaySpacesDirectoryPage /> },
+      { path: 'play/schedule', element: <PlayMySchedulePage /> },
+      { path: 'play/:slug/s/:token', element: <PlaySpaceSharePage /> },
+      { path: 'play/:slug/program/manage', element: <PlaySpaceProgramManagePage /> },
+      { path: 'play/:slug/reservations/:id', element: <PlaySpaceReservationDetailPage /> },
+      { path: 'play/:slug/reservations', element: <PlaySpaceReservationsPage /> },
+      { path: 'play/:slug', element: <PlaySpaceDetailPage /> },
       { path: 'groups', element: <GroupsPage /> },
       { path: 'groups/onboarding', element: <GroupOnboardingPage /> },
       { path: 'groups/:id', element: <GroupDetailPage /> },
@@ -225,16 +236,24 @@ export const router = createBrowserRouter([
             path: 'edit',
             element: <ProfileEditLayout />,
             children: [
-              { index: true, element: <ProfileBasicsPanel /> },
-              { path: 'about', element: <AboutPanel /> },
+              { index: true, element: <OverviewPanel /> },
+              { path: 'photos', element: <PhotosStudioPanel /> },
               { path: 'identity', element: <CommunityIdentityPanel /> },
-              { path: 'looking-for', element: <LookingForPanel /> },
-              { path: 'relationships', element: <RelationshipsPanel /> },
               { path: 'interests', element: <InterestsPanel /> },
-              { path: 'privacy', element: <PrivacyPanel /> },
-              { path: 'links', element: <WebsitesPanel /> },
+              { path: 'presence', element: <PresencePanel /> },
+              { path: 'about', element: <Navigate to="/profile/edit" replace /> },
+              {
+                path: 'looking-for',
+                element: <Navigate to="/profile/edit/presence?section=connections" replace />,
+              },
+              {
+                path: 'relationships',
+                element: <Navigate to="/profile/edit/presence?section=relationships" replace />,
+              },
+              { path: 'privacy', element: <Navigate to="/profile/edit/presence?section=visibility" replace /> },
+              { path: 'links', element: <Navigate to="/profile/edit/presence?section=links" replace /> },
               { path: 'fetishes', element: <Navigate to="/profile/edit/interests" replace /> },
-              { path: 'websites', element: <Navigate to="/profile/edit/links" replace /> },
+              { path: 'websites', element: <Navigate to="/profile/edit/presence?section=links" replace /> },
               { path: 'general', element: <Navigate to="/profile/edit" replace /> },
             ],
           },
@@ -318,7 +337,7 @@ export const router = createBrowserRouter([
       { path: 'organizer/conventions/:slug', element: <OrganizerConventionRedirectPage /> },
       { path: 'organizer/dancecard', element: <Navigate to="/organizer" replace /> },
       { path: 'organizer/dancecard/:slug', element: <OrganizerConventionRedirectPage /> },
-      { path: 'join', element: <Navigate to="/?signup=1#auth" replace /> },
+      { path: 'join', element: <Navigate to="/login?signup=1" replace /> },
       { path: 'safety', element: <Navigate to="/support" replace /> },
       { path: 'community-guidelines', element: <Navigate to="/guidelines" replace /> },
       { path: 'about', element: <AboutPage /> },

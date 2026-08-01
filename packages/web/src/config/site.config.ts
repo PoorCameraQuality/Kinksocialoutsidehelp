@@ -62,6 +62,7 @@ export const siteConfig = {
   navLanding: [
     { href: '/events', label: 'Events' },
     { href: '/groups', label: 'Groups' },
+    { href: '/play', label: 'Dancecard' },
     { href: '/education', label: 'Education' },
     { href: '/organizer', label: 'For Organizers' },
   ] as const,
@@ -85,12 +86,25 @@ export const siteConfig = {
     { href: '/profile', label: 'Me', iconKey: 'me' as const },
   ] as const,
 
+  /**
+   * Bottom bar on dancecard.* — Home exits to apex; Schedule + Spaces stay on product host.
+   * `external: true` = full navigation to apex (not SPA Link).
+   */
+  dancecardBottomNav: [
+    { href: '/home', label: 'Home', iconKey: 'home' as const, external: true },
+    { href: '/play/schedule', label: 'Schedule', iconKey: 'schedule' as const, external: false },
+    { href: '/play', label: 'Spaces', iconKey: 'dancecard' as const, external: false },
+    { href: '/messaging', label: 'Chat', iconKey: 'messages' as const, external: false },
+    { href: '/profile', label: 'Me', iconKey: 'me' as const, external: false },
+  ] as const,
+
   /** Logged-in desktop main nav (home dashboard shell). */
   appHomeMainNav: [
     { href: '/home?mode=discover&tab=Local', label: 'Home' },
     { href: '/explore', label: 'Explore' },
     { href: '/events', label: 'Events' },
     { href: '/conventions', label: 'Conventions' },
+    { href: '/play', label: 'Dancecard' },
     { href: '/groups', label: 'Groups' },
     { href: '/education', label: 'Education' },
     { href: '/vendors', label: 'Vendors' },
@@ -102,6 +116,7 @@ export const siteConfig = {
   appTopNav: [
     { href: '/explore', label: 'Explore' },
     { href: '/events', label: 'Events' },
+    { href: '/play', label: 'Dancecard' },
     { href: '/groups', label: 'Groups' },
     { href: '/education', label: 'Education' },
   ] as const,
@@ -112,6 +127,7 @@ export const siteConfig = {
     directory: [
       { href: '/people', label: 'People' },
       { href: '/events', label: 'Events' },
+      { href: '/play', label: 'Dancecard' },
       { href: '/orgs', label: 'Organizations' },
       { href: '/places', label: 'Kinky Map' },
       { href: '/places?category=dungeon_club', label: 'Dungeons & clubs' },

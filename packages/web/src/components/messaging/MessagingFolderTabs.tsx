@@ -12,13 +12,21 @@ type Props = {
   counts?: { requests?: number; iso?: number }
   /** Hide folder hint line when inbox is empty (mobile density) */
   showHint?: boolean
+  /** Dancecard: hide ISO (convention/apex-oriented). */
+  hideIso?: boolean
 }
 
-export default function MessagingFolderTabs({ active, onChange, counts, showHint = true }: Props) {
+export default function MessagingFolderTabs({
+  active,
+  onChange,
+  counts,
+  showHint = true,
+  hideIso = false,
+}: Props) {
   const tabs: { id: Folder; label: string; count?: number }[] = [
     { id: 'main', label: 'Main' },
     { id: 'requests', label: 'Requests', count: counts?.requests },
-    { id: 'iso', label: 'ISO', count: counts?.iso },
+    ...(hideIso ? [] : [{ id: 'iso' as const, label: 'ISO', count: counts?.iso }]),
   ]
 
   return (

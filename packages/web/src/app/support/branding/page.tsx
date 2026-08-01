@@ -69,7 +69,8 @@ export default function BrandingGuidePage() {
           <p className="mt-2 text-dc-muted">
             Crawler-friendly pages: <code className="text-xs">/share/orgs/:slug</code>,{' '}
             <code className="text-xs">/share/groups/:idOrSlug</code>,{' '}
-            <code className="text-xs">/share/conventions/:slug</code> on the API host.
+            <code className="text-xs">/share/conventions/:slug</code>,{' '}
+            <code className="text-xs">/share/iso/:username</code> on the API host.
           </p>
         </div>
 

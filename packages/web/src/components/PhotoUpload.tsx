@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { MAX_IMAGE_UPLOAD_BYTES } from '@c2k/shared'
 import {
   MediaUploadProgressOverlay,
   MediaUploadSpinner,
@@ -25,7 +26,7 @@ type PhotoUploadProps = {
 export default function PhotoUpload({
   onSelect,
   accept = 'image/*',
-  maxSize = 10 * 1024 * 1024,
+  maxSize = MAX_IMAGE_UPLOAD_BYTES,
   guidelines,
   uploading = false,
   uploadStage = null,
@@ -45,8 +46,10 @@ export default function PhotoUpload({
       setError('Please select an image file.')
       return
     }
-    if (maxSize && file.size > maxSize) {
-      setError(`File too large. Max ${Math.round(maxSize / 1024 / 1024)}MB.`)
+    // Client compress runs before POST; allow larger camera originals than the wire cap.
+    const pickLimit = maxSize ? maxSize * 2 : 0
+    if (pickLimit && file.size > pickLimit) {
+      setError(`File too large. Max about ${Math.round(pickLimit / 1024 / 1024)}MB.`)
       return
     }
     if (pendingFile) URL.revokeObjectURL(pendingFile.objectUrl)

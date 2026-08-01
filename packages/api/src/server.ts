@@ -46,19 +46,24 @@ import { registerGroupForumRoutes } from './routes/group-forums.js'
 import { registerConventionRoutes } from './routes/conventions-routes.js'
 import { registerConventionIsoRoutes } from './routes/convention-iso-routes.js'
 import { registerConventionDancecardV2Routes } from './routes/convention-dancecard-routes.js'
+import { registerPlaySpaceRoutes } from './routes/play-spaces-routes.js'
+import { registerPlaySpaceDancecardRoutes } from './routes/play-spaces-dancecard-routes.js'
 import { registerConventionOrganizerRoutes } from './routes/convention-organizer-routes.js'
 import { registerConventionPublicRoutes } from './routes/convention-public-routes.js'
 import { registerConventionAttendeeRoutes } from './routes/convention-attendee-routes.js'
 import { registerConventionHubExtRoutes } from './routes/convention-hub-ext-routes.js'
 import { registerConventionHubChannelsRoutes } from './routes/convention-hub-channels-routes.js'
+import { registerPlaySpaceHubChannelsRoutes } from './routes/play-space-hub-channels-routes.js'
 import { registerPushRoutes } from './routes/push-routes.js'
 import { registerIsoRoutes } from './routes/iso-routes.js'
+import { registerIsoShareRoutes } from './routes/iso-share-routes.js'
 import { registerNotificationPreferencesRoutes } from './routes/notification-preferences-routes.js'
 import { registerEmailRoutes } from './routes/email-routes.js'
 import { registerScopeEmailRoutes } from './routes/scope-email-routes.js'
 import { registerPresenterProfileRoutes } from './routes/presenter-profiles.js'
 import { registerUserEcosystemRoutes } from './routes/user-ecosystem.js'
 import { registerMatchmakerRoutes } from './routes/matchmaker-routes.js'
+import { registerPlaySpaceIsoMatchmakerRoutes } from './routes/play-space-iso-matchmaker-routes.js'
 import { registerFeedRoutes } from './routes/feed-routes.js'
 import { registerEducationArticleRoutes } from './routes/education-articles-routes.js'
 import { registerMediaRoutes } from './routes/media-routes.js'
@@ -283,6 +288,7 @@ await registerProfileConnectionRoutes(app)
 await registerProfileRelationshipRoutes(app)
 await registerProfileLinkRoutes(app)
 await registerIsoRoutes(app)
+await registerIsoShareRoutes(app)
 await registerSettingsRoutes(app)
 await registerKinkTagRoutes(app)
 await registerProfileKinksRoutes(app)
@@ -324,6 +330,10 @@ await registerConventionHubExtRoutes(app)
 await registerConventionHubChannelsRoutes(app)
 await registerConventionIsoRoutes(app)
 await registerConventionDancecardV2Routes(app)
+await registerPlaySpaceRoutes(app)
+await registerPlaySpaceDancecardRoutes(app)
+await registerPlaySpaceHubChannelsRoutes(app)
+await registerPlaySpaceIsoMatchmakerRoutes(app)
 await registerConventionOrganizerRoutes(app)
 registerConventionPublicRoutes(app)
 await registerConventionAttendeeRoutes(app)

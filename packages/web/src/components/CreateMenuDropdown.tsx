@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizerOrgScopes } from '@/hooks/useOrganizerOrgScopes'
 import { homeNearYouHref } from '@/lib/community-nav'
+import SiteNavLink from '@/components/SiteNavLink'
 
 export type CreateMenuItem = {
   id: string
@@ -127,6 +127,13 @@ function useCreateMenuSections(): CreateSection[] {
       icon: <CalendarIcon />,
     },
     {
+      id: 'play-space',
+      label: 'Dancecard play space',
+      description: 'Camp, house party, or private gathering — open Dancecard',
+      to: '/play',
+      icon: <CalendarIcon />,
+    },
+    {
       id: 'group',
       label: 'Group',
       description: 'Start a local or interest-based community',
@@ -210,9 +217,8 @@ export default function CreateMenuDropdown({ className = '', onNavigate, variant
             <ul className="space-y-1">
               {section.items.map((item) => (
                 <li key={item.id} role="none">
-                  <Link
-                    role="menuitem"
-                    to={item.to}
+                  <SiteNavLink
+                    href={item.to}
                     onClick={onNavigate}
                     className="flex min-h-touch items-start gap-3 rounded-xl px-3 py-2.5 hover:bg-dc-elevated-muted"
                   >
@@ -223,7 +229,7 @@ export default function CreateMenuDropdown({ className = '', onNavigate, variant
                       <span className="block text-base font-medium text-dc-text">{item.label}</span>
                       <span className="block text-sm text-dc-muted">{item.description}</span>
                     </span>
-                  </Link>
+                  </SiteNavLink>
                 </li>
               ))}
             </ul>
@@ -241,15 +247,14 @@ export default function CreateMenuDropdown({ className = '', onNavigate, variant
           <ul>
             {section.items.map((item) => (
               <li key={item.id} role="none">
-                <Link
-                  role="menuitem"
-                  to={item.to}
+                <SiteNavLink
+                  href={item.to}
                   onClick={onNavigate}
                   className="flex min-h-touch items-center gap-2 rounded-lg px-3 py-2 text-sm text-dc-text-muted hover:bg-dc-elevated-muted hover:text-dc-text"
                 >
                   <span className="text-dc-accent">{item.icon}</span>
                   {item.label}
-                </Link>
+                </SiteNavLink>
               </li>
             ))}
           </ul>

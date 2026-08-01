@@ -1,6 +1,6 @@
-/* Minimal offline shell — v3 §14 PWA fallback */
-const CACHE = 'c2k-offline-v2'
-const SHELL = ['/', '/home', '/manifest.json', '/og-default.png']
+/* Minimal offline shell — do not cache arbitrary navigations (stale HTML caused dancecard flicker). */
+const CACHE = 'c2k-offline-v5-iso-full-sheet'
+const SHELL = ['/', '/play', '/login', '/manifest.json', '/og-default.png', '/og-dancecard.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -20,6 +20,14 @@ self.addEventListener('activate', (event) => {
   )
 })
 
+function offlineShellFallback() {
+  const host = self.location.hostname.toLowerCase()
+  if (host === 'dancecard.kink.social' || host.startsWith('dancecard.')) {
+    return caches.match('/play').then((cached) => cached ?? caches.match('/login') ?? caches.match('/'))
+  }
+  return caches.match('/').then((cached) => cached ?? caches.match('/play'))
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
   const url = new URL(event.request.url)
@@ -31,25 +39,21 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/@') ||
     url.pathname.startsWith('/node_modules/') ||
     event.request.destination === 'script' ||
-    event.request.destination === 'worker'
+    event.request.destination === 'worker' ||
+    event.request.destination === 'style'
   ) {
+    return
+  }
+
+  // Navigations: network-first, never put dynamic HTML into cache.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).catch(() => offlineShellFallback()))
     return
   }
 
   event.respondWith(
     fetch(event.request)
-      .then((res) => {
-        if (res.ok && event.request.mode === 'navigate') {
-          const copy = res.clone()
-          caches.open(CACHE).then((cache) => cache.put(event.request, copy))
-        }
-        return res
-      })
-      .catch(() => {
-        if (event.request.mode !== 'navigate') {
-          return caches.match(event.request)
-        }
-        return caches.match(event.request).then((cached) => cached ?? caches.match('/home'))
-      }),
+      .then((res) => res)
+      .catch(() => caches.match(event.request)),
   )
 })

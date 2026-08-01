@@ -302,6 +302,7 @@ export async function registerProfileRoutes(app: FastifyInstance) {
       kinks?: Awaited<ReturnType<typeof loadProfileKinks>>
       iso?: {
         body: string
+        structured: Record<string, unknown>
         visibility: string
         acceptDmsViaIso: boolean
         updatedAt: string
@@ -361,6 +362,7 @@ export async function registerProfileRoutes(app: FastifyInstance) {
           .orderBy(asc(schema.userIsoImages.sortOrder))
         payload.iso = {
           body: isoPost.body,
+          structured: isoPost.structured ?? {},
           visibility: isoPost.visibility,
           acceptDmsViaIso: isoPost.acceptDmsViaIso,
           updatedAt: isoPost.updatedAt.toISOString(),

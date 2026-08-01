@@ -1,9 +1,12 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Link, Navigate, Outlet, useBlocker, useLocation, useSearchParams } from 'react-router-dom'
 import { TabContentTransition } from '@/components/dancecard/ui/TabContentTransition'
-import ProfileEditTabNav from '@/components/profile/edit/ProfileEditTabNav'
+import ProfileEditTabNav, {
+  getProfileEditTab,
+  resolveActiveProfileEditTab,
+} from '@/components/profile/edit/ProfileEditTabNav'
 import ProfileStudioCoachRail from '@/components/profile/studio/ProfileStudioCoachRail'
-import ProfileStudioSaveBar from '@/components/profile/studio/ProfileStudioSaveBar'
+import ProfileStudioSaveBar, { type AutosaveBarState } from '@/components/profile/studio/ProfileStudioSaveBar'
 import MediaAttestationModal from '@/components/media/MediaAttestationModal'
 import { ProfileEditProvider, useProfileEdit } from '@/contexts/ProfileEditContext'
 import { buildLoginHref } from '@/lib/auth-links'
@@ -12,24 +15,89 @@ import { useAuth } from '@/contexts/AuthContext'
 import { formatPronounDisplay, parseProfileFieldVisibility } from '@c2k/shared'
 import { DancecardPanelSkeleton } from '@/components/ui/skeleton'
 import { MOCK_VIEWER_USERNAME } from '@/data/mock-data'
-import {
-  deriveStudioSectionStatus,
-  deriveVisitorReadout,
-} from '@/lib/profile-studio/completion'
+import { deriveStudioSectionStatus } from '@/lib/profile-studio/completion'
+import type { PresenceSectionId } from '@/components/profile/edit/PresencePanel'
+
+function resolvePresenceSubsection(raw: string | null): PresenceSectionId {
+  if (raw === 'relationships' || raw === 'links' || raw === 'visibility') return raw
+  return 'connections'
+}
+
+function deriveAutosaveState(input: {
+  saving: boolean
+  hasUnsavedChanges: boolean
+  saveNotice: string | null
+  photoUploadStage: 'idle' | 'uploading' | 'processing' | null
+  photoUploadError: string | null
+  isOnline: boolean
+}): { state: AutosaveBarState; message: string; saveFailed: boolean } {
+  if (!input.isOnline) {
+    return {
+      state: 'offline',
+      message: 'Offline — will save when connection returns',
+      saveFailed: false,
+    }
+  }
+
+  if (input.photoUploadStage === 'uploading') {
+    return { state: 'saving', message: 'Updating profile picture…', saveFailed: false }
+  }
+  if (input.photoUploadStage === 'processing') {
+    return { state: 'saving', message: 'Scanning your photo…', saveFailed: false }
+  }
+  if (input.photoUploadError) {
+    return { state: 'error', message: "Couldn't save photo — try again", saveFailed: true }
+  }
+
+  if (input.saving || input.hasUnsavedChanges) {
+    return { state: 'saving', message: 'Saving…', saveFailed: false }
+  }
+
+  if (input.saveNotice) {
+    const saved =
+      input.saveNotice.includes('saved') ||
+      input.saveNotice.includes('updated') ||
+      input.saveNotice.includes('approved')
+    if (saved) {
+      return { state: 'saved', message: 'Saved just now', saveFailed: false }
+    }
+    return {
+      state: 'error',
+      message: "Couldn't save changes — edits still on this device",
+      saveFailed: true,
+    }
+  }
+
+  return { state: 'idle', message: 'Your changes save automatically', saveFailed: false }
+}
 
 function ProfileEditLayoutInner() {
   const { isAuthenticated, isFallback, status: authStatus } = useAuth()
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false)
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true,
+  )
   const redirectAfter = searchParams.get('redirect')
   const ctx = useProfileEdit()
 
   useEffect(() => {
+    const onOnline = () => setIsOnline(true)
+    const onOffline = () => setIsOnline(false)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!ctx.hasUnsavedChanges) return
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault()
-      e.returnValue = ''
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
     }
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
@@ -47,9 +115,13 @@ function ProfileEditLayoutInner() {
     else blocker.reset()
   }, [blocker])
 
-  const publicProfileHref = ctx.viewerUsername ?
-    `/profile/${encodeURIComponent(ctx.viewerUsername)}`
-  : null
+  const activeSection = resolveActiveProfileEditTab(location.pathname)
+  const activeTab = getProfileEditTab(activeSection)
+  const presenceSubsection = resolvePresenceSubsection(searchParams.get('section'))
+  const isExpandedEditor = /\/profile\/edit\/(photos|interests)(\/|$)/.test(location.pathname)
+
+  const publicProfileHref =
+    ctx.viewerUsername ? `/profile/${encodeURIComponent(ctx.viewerUsername)}` : null
 
   const completionInput = useMemo(
     () => ({
@@ -69,7 +141,6 @@ function ProfileEditLayoutInner() {
   )
 
   const sectionStatus = useMemo(() => deriveStudioSectionStatus(completionInput), [completionInput])
-  const visitorReadout = useMemo(() => deriveVisitorReadout(completionInput), [completionInput])
 
   const previewDraft = useMemo(
     () => ({
@@ -90,6 +161,9 @@ function ProfileEditLayoutInner() {
       roles: ctx.roles,
       lifestyleActivity: ctx.lifestyleActivity,
       lookingFor: ctx.lookingFor,
+      kinksCount: ctx.kinks.length,
+      kinkLabels: ctx.kinks.map((kink) => kink.displayName).filter(Boolean),
+      linksCount: ctx.links.length,
       photoUrl: ctx.photoPreviewUrl,
       photoCaption: ctx.photoCaption.trim() || null,
       photoDisplaySettings: ctx.photoDisplaySettings,
@@ -98,13 +172,26 @@ function ProfileEditLayoutInner() {
     [ctx],
   )
 
+  const autosave = useMemo(
+    () =>
+      deriveAutosaveState({
+        saving: ctx.saving,
+        hasUnsavedChanges: ctx.hasUnsavedChanges,
+        saveNotice: ctx.saveNotice,
+        photoUploadStage: ctx.photoUploadStage,
+        photoUploadError: ctx.photoUploadError,
+        isOnline,
+      }),
+    [ctx.saving, ctx.hasUnsavedChanges, ctx.saveNotice, ctx.photoUploadStage, ctx.photoUploadError, isOnline],
+  )
+
   const coachRail = (
     <ProfileStudioCoachRail
+      section={activeSection}
+      presenceSubsection={presenceSubsection}
       draft={previewDraft}
-      publicProfileHref={publicProfileHref}
       hasUnsavedChanges={ctx.hasUnsavedChanges}
       photoUploadStage={ctx.photoUploadStage === 'idle' ? null : ctx.photoUploadStage}
-      visitorReadout={visitorReadout}
     />
   )
 
@@ -118,7 +205,7 @@ function ProfileEditLayoutInner() {
 
   if (ctx.loading) {
     return (
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-8" aria-busy="true" aria-label="Loading profile">
+      <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8" aria-busy="true" aria-label="Loading profile">
         <div className="mb-6 space-y-2">
           <div className="dc-skeleton-bone h-8 w-48 rounded-lg" />
           <div className="dc-skeleton-bone h-4 w-full max-w-md rounded-lg" />
@@ -131,59 +218,33 @@ function ProfileEditLayoutInner() {
     )
   }
 
-  const footerHint =
-    location.pathname.endsWith('/links') ?
-      'Websites save with Save link in the panel—not this footer bar.'
-    : location.pathname.endsWith('/relationships') ?
-      'Relationships save with the buttons in that panel—not this footer bar.'
-    : location.pathname.endsWith('/privacy') ?
-      'Privacy choices here save immediately when you change them.'
-    : 'Text fields and interests auto-save after you leave a field. Photos save when you pick a file.'
-
-  const footerStatus =
-    ctx.photoUploadStage === 'uploading' ? 'Uploading photo to server…'
-    : ctx.photoUploadStage === 'processing' ? 'Scanning your photo…'
-    : ctx.photoUploadError ? 'Photo upload failed — see message above'
-    : ctx.saving ? 'Saving…'
-    : ctx.hasUnsavedChanges ? 'Unsaved changes — auto-saves when you leave a field'
-    : ctx.saveNotice && !ctx.saveNotice.includes('saved') && !ctx.saveNotice.includes('updated') ?
-      'Something needs attention — see message above'
-    : ctx.saveNotice?.includes('saved') || ctx.saveNotice?.includes('updated') ? 'All changes saved'
-    : 'Up to date'
-
   return (
-    <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 sm:py-8 lg:px-8 pb-[calc(var(--c2k-save-bar-h)+var(--c2k-mobile-breathing)+env(safe-area-inset-bottom,0px)+1.25rem)] md:pb-[calc(var(--c2k-save-bar-h)+1rem)]">
+    <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 sm:py-8 lg:px-8 pb-[calc(var(--c2k-save-bar-h)+var(--c2k-mobile-breathing)+env(safe-area-inset-bottom,0px)+1.25rem)] md:pb-[calc(var(--c2k-save-bar-h)+1rem)]">
       <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-dc-text sm:text-2xl lg:text-3xl">Profile Studio</h1>
+          <p className="mt-1 text-sm text-dc-muted">Your changes save automatically.</p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           {publicProfileHref ?
             <Link
               to={publicProfileHref}
-              className="inline-flex min-h-10 items-center rounded-xl border border-dc-border px-3 text-xs font-medium text-dc-text hover:bg-dc-elevated-muted sm:min-h-10 sm:px-4 sm:text-sm"
+              className="inline-flex min-h-10 items-center rounded-xl border border-dc-border px-3 text-xs font-medium text-dc-text hover:bg-dc-elevated-muted sm:px-4 sm:text-sm"
             >
-              View public profile
+              Preview profile
             </Link>
           : null}
           <Link
             to="/profile"
-            className="inline-flex min-h-10 items-center rounded-xl border border-dc-border px-3 text-xs font-medium text-dc-text-muted hover:text-dc-text sm:border-0 sm:bg-dc-accent sm:px-4 sm:text-sm sm:font-medium sm:text-dc-accent-foreground sm:hover:bg-dc-accent-hover"
+            className="inline-flex min-h-10 items-center rounded-xl border border-dc-border px-3 text-xs font-medium text-dc-text-muted hover:text-dc-text sm:px-4 sm:text-sm"
           >
-            Your dashboard
+            Exit Studio
           </Link>
         </div>
       </div>
 
-      {ctx.saveNotice ?
-        <p
-          className={`mb-6 text-sm rounded-xl border px-4 py-3 ${
-            ctx.saveNotice.includes('saved') || ctx.saveNotice.includes('updated') ?
-              'border-dc-accent-border bg-dc-accent-muted text-dc-text'
-            : 'border-dc-warning/30 bg-dc-warning-muted text-dc-warning'
-          }`}
-          role="status"
-        >
+      {ctx.saveNotice && autosave.state === 'error' ?
+        <p className="mb-6 rounded-xl border border-dc-warning/30 bg-dc-warning-muted px-4 py-3 text-sm text-dc-warning" role="alert">
           {ctx.saveNotice}
         </p>
       : null}
@@ -192,35 +253,48 @@ function ProfileEditLayoutInner() {
         <ProfileEditTabNav sectionStatus={sectionStatus} />
         <button
           type="button"
-          onClick={() => setMobilePreviewOpen((o) => !o)}
+          onClick={() => setMobilePreviewOpen((open) => !open)}
           className="w-full min-h-10 rounded-xl border border-dc-border text-sm font-medium text-dc-accent hover:bg-dc-accent-muted/20"
         >
-          {mobilePreviewOpen ? 'Hide live preview' : 'Preview profile'}
+          {mobilePreviewOpen ? 'Hide preview' : 'Preview section'}
         </button>
         {mobilePreviewOpen ? coachRail : null}
       </div>
 
-      <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)_340px] lg:gap-6 lg:items-start">
+      <div
+        className={
+          isExpandedEditor ?
+            'lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8 lg:items-start'
+          : 'lg:grid lg:grid-cols-[240px_minmax(0,1fr)_340px] lg:gap-8 lg:items-start'
+        }
+      >
         <aside className="hidden lg:block sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
           <ProfileEditTabNav sectionStatus={sectionStatus} />
         </aside>
 
         <div className="min-w-0">
-          <TabContentTransition tabKey={location.pathname}>
+          {activeTab ?
+            <header className="mb-5">
+              <h2 className="text-lg font-semibold text-dc-text sm:text-xl">{activeTab.label}</h2>
+              <p className="mt-1 text-sm text-dc-muted">{activeTab.description}</p>
+            </header>
+          : null}
+          <TabContentTransition tabKey={`${location.pathname}?${searchParams.get('section') ?? ''}`}>
             <Outlet />
           </TabContentTransition>
         </div>
 
-        <aside className="hidden lg:block">{coachRail}</aside>
+        {!isExpandedEditor ?
+          <aside className="hidden lg:block">{coachRail}</aside>
+        : null}
       </div>
 
       <ProfileStudioSaveBar
-        status={footerStatus}
-        hint={footerHint}
-        saving={ctx.saving}
-        hasUnsavedChanges={ctx.hasUnsavedChanges}
-        onSave={() => void ctx.handleSave()}
-        onDiscard={ctx.hasUnsavedChanges ? () => ctx.discardChanges() : undefined}
+        state={autosave.state}
+        message={autosave.message}
+        onRetry={autosave.saveFailed ? () => void ctx.handleSave() : undefined}
+        onDiscard={autosave.saveFailed && ctx.hasUnsavedChanges ? () => ctx.discardChanges() : undefined}
+        showDiscard={autosave.saveFailed && ctx.hasUnsavedChanges}
       />
 
       <MediaAttestationModal

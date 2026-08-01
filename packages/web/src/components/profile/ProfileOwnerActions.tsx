@@ -23,14 +23,20 @@ export default function ProfileOwnerActions({
       <div className="flex flex-wrap gap-2">
         <Link
           to="/profile/edit"
-          className="min-h-11 inline-flex items-center px-4 py-2 bg-dc-accent hover:bg-dc-accent-hover text-dc-accent-foreground text-sm font-medium rounded-xl transition-colors"
+          className="min-h-11 inline-flex items-center rounded-xl border border-dc-border bg-dc-elevated-solid px-4 py-2 text-sm font-medium text-dc-text transition-colors hover:bg-dc-elevated-muted"
         >
           Profile Studio
+        </Link>
+        <Link
+          to="/profile/edit/photos"
+          className="min-h-11 inline-flex items-center rounded-xl border border-dc-border bg-dc-elevated-solid px-4 py-2 text-sm font-medium text-dc-text transition-colors hover:bg-dc-elevated-muted"
+        >
+          Manage photos
         </Link>
         {publicHref ?
           <Link
             to={publicHref}
-            className="min-h-11 inline-flex items-center px-4 py-2 bg-dc-elevated-solid hover:bg-dc-elevated-muted text-dc-text text-sm font-medium rounded-xl border border-dc-border transition-colors"
+            className="min-h-11 inline-flex items-center rounded-xl border border-dc-border bg-dc-elevated-solid px-4 py-2 text-sm font-medium text-dc-text transition-colors hover:bg-dc-elevated-muted"
           >
             View as public
           </Link>

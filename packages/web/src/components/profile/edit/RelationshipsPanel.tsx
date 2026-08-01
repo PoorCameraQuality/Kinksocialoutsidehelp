@@ -5,7 +5,6 @@ import {
   PROFILE_RELATIONSHIP_LABELS,
 } from '@c2k/shared'
 import ProfileStudioInsetCard from '@/components/profile/studio/ProfileStudioInsetCard'
-import { profileStudioNestedRowClass } from '@/components/profile/studio/profile-studio-classes'
 import LabelCombobox from '@/components/ui/LabelCombobox'
 import { useProfileEdit, type ProfileRelationshipRow } from '@/contexts/ProfileEditContext'
 
@@ -19,13 +18,6 @@ type IncomingRequest = {
 
 type ConnectionFriend = {
   username: string
-}
-
-function formatRelationshipLine(item: ProfileRelationshipRow): string {
-  const parts = [item.label]
-  if (item.partnerUsername) parts.push(`@${item.partnerUsername}`)
-  if (item.customText) parts.push(`, ${item.customText}`)
-  return parts.join(' ')
 }
 
 function RelationshipBlock({
@@ -46,12 +38,14 @@ function RelationshipBlock({
   onReload: () => Promise<void>
 }) {
   const filtered = items.filter((i) => i.kind === kind)
+  const [adding, setAdding] = useState(false)
   const [label, setLabel] = useState(labelSuggestions[0] ?? '')
   const [partnerUsername, setPartnerUsername] = useState('')
   const [customText, setCustomText] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [visibility, setVisibility] = useState<'hidden' | 'friends' | 'public'>('friends')
+  const addLabel = kind === 'ds' ? 'Add D/s relationship' : 'Add relationship'
 
   const friendOptions = useMemo(
     () => friends.map((f) => f.username).sort((a, b) => a.localeCompare(b)),
@@ -86,6 +80,7 @@ function RelationshipBlock({
       }
       setPartnerUsername('')
       setCustomText('')
+      setAdding(false)
       await onReload()
     } finally {
       setBusy(false)
@@ -93,133 +88,158 @@ function RelationshipBlock({
   }
 
   async function remove(id: string) {
+    if (!window.confirm('Remove this relationship from your profile?')) return
     await fetch(`/api/profile/me/relationships/${id}`, { method: 'DELETE', credentials: 'include' })
     await onReload()
   }
 
+  const visibilityLabel = (v: string) =>
+    v === 'public' ? 'Public' : v === 'friends' ? 'Connections' : 'Only me'
+
   return (
-    <ProfileStudioInsetCard className="space-y-4">
-      <h3 className="text-sm font-semibold text-dc-text">{title}</h3>
-      <ul className="space-y-2">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-dc-text">{title}</h3>
+        {!adding ?
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="min-h-10 rounded-lg border border-dc-border-subtle px-3 text-sm font-medium text-dc-text hover:border-dc-accent"
+          >
+            {addLabel}
+          </button>
+        : null}
+      </div>
+
+      <ul className="divide-y divide-dc-border-subtle rounded-xl border border-dc-border-subtle bg-dc-elevated-solid/60">
         {filtered.length === 0 ?
-          <li className="text-sm text-dc-muted italic">None listed yet.</li>
+          <li className="px-4 py-5 text-sm text-dc-muted">None listed yet.</li>
         : filtered.map((item) => (
             <li
               key={item.id}
-              className={`flex flex-wrap items-center justify-between gap-2 text-sm ${profileStudioNestedRowClass}`}
+              className="flex min-h-12 flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-sm sm:px-4"
             >
-              <span className="text-dc-text-muted">
-                {formatRelationshipLine(item)}
-                {item.status === 'pending' ?
-                  <span className="ml-2 text-xs text-amber-400/90">(pending partner approval)</span>
-                : null}
-              </span>
+              <div className="min-w-0">
+                <p className="font-medium text-dc-text">{item.label}</p>
+                <p className="text-xs text-dc-muted">
+                  {item.partnerUsername ? `@${item.partnerUsername}` : 'No linked member'}
+                  {' · '}
+                  {visibilityLabel(item.visibility)}
+                  {item.status === 'pending' ? ' · Pending approval' : null}
+                  {item.customText ? ` · ${item.customText}` : null}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => void remove(item.id)}
-                className="text-xs text-dc-accent hover:underline"
+                className="shrink-0 text-sm text-dc-danger hover:underline"
               >
-                remove
+                Remove
               </button>
             </li>
-          ))
-        }
+          ))}
       </ul>
-      <div className="space-y-3 border-t border-dc-border pt-4">
-        <LabelCombobox
-          label="Relationship type"
-          hint="Pick a suggestion or type your own label."
-          value={label}
-          onChange={setLabel}
-          suggestions={labelSuggestions}
-        />
-        <div>
-          <label htmlFor={`${kind}-partner`} className="block text-sm font-medium text-dc-text mb-1">
-            Link a connection (optional)
-          </label>
-          <p className="text-xs text-dc-muted mb-2">
-            Tagged people must approve before the link appears publicly. Only accepted connections can be linked.
-          </p>
-          {friendOptions.length > 0 ?
-            <select
-              id={`${kind}-partner`}
-              value={partnerUsername}
-              onChange={(e) => setPartnerUsername(e.target.value)}
-              className="w-full min-h-11 px-3 py-2 rounded-lg border border-dc-border bg-dc-surface-muted text-sm text-dc-text"
+
+      {adding ?
+        <ProfileStudioInsetCard className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-dc-text">{addLabel}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setAdding(false)
+                setError(null)
+              }}
+              className="text-xs text-dc-muted hover:text-dc-text"
             >
-              <option value="">No linked profile</option>
-              {friendOptions.map((u) => (
-                <option key={u} value={u}>@{u}</option>
-              ))}
-            </select>
-          : (
-            <input
-              id={`${kind}-partner`}
-              type="text"
-              placeholder="Friend username (connect first)"
-              value={partnerUsername}
-              onChange={(e) => setPartnerUsername(e.target.value)}
-              className="w-full min-h-11 px-3 py-2 rounded-lg border border-dc-border bg-dc-surface-muted text-sm text-dc-text"
-            />
-          )}
-        </div>
-        <div>
-          <label htmlFor={`${kind}-visibility`} className="block text-sm font-medium text-dc-text mb-1">
-            Visibility
-          </label>
-          <select
-            id={`${kind}-visibility`}
-            value={visibility}
-            onChange={(e) => setVisibility(e.target.value as typeof visibility)}
-            className="w-full min-h-11 px-3 py-2 rounded-lg border border-dc-border bg-dc-surface-muted text-sm text-dc-text"
-          >
-            <option value="hidden">Only me (hidden until approved)</option>
-            <option value="friends">Connections</option>
-            <option value="public">Public</option>
-          </select>
-          <p className="text-xs text-dc-muted mt-1">
-            {kind === 'ds' ?
-              'D/s links are sensitive · Connections is the recommended default.'
-            : 'Hidden until your partner approves, then follows this visibility.'}
-          </p>
-        </div>
-        {partnerUsername.trim() ?
-          <p className="text-xs rounded-lg border border-dc-border bg-dc-surface-muted/40 px-3 py-2 text-dc-text-muted">
-            <span className="font-medium text-dc-text">Public preview: </span>
-            {viewerDisplayName} is in a {label.toLowerCase()} with @{partnerUsername.trim()}
-            {visibility === 'hidden' ?
-              ' (hidden until approved)'
-            : visibility === 'friends' ?
-              ' (visible to connections)'
-            : ' (public)'}
-          </p>
-        : null}
-        <div>
-          <label htmlFor={`${kind}-note`} className="block text-sm font-medium text-dc-text mb-1">
-            Note (optional)
-          </label>
-          <input
-            id={`${kind}-note`}
-            type="text"
-            placeholder="e.g. long distance, scene only"
-            value={customText}
-            onChange={(e) => setCustomText(e.target.value)}
-            className="w-full min-h-11 px-3 py-2 rounded-lg border border-dc-border bg-dc-surface-muted text-sm text-dc-text"
+              Cancel
+            </button>
+          </div>
+          <LabelCombobox
+            label="Relationship type"
+            hint="Pick a suggestion or type your own label."
+            value={label}
+            onChange={setLabel}
+            suggestions={labelSuggestions}
           />
-        </div>
-        {error ?
-          <p className="text-xs text-red-400" role="alert">{error}</p>
-        : null}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void add()}
-          className="min-h-11 px-4 rounded-lg border border-dc-border text-sm text-dc-text hover:bg-dc-elevated-muted disabled:opacity-50"
-        >
-          {busy ? 'Adding…' : `Add ${kind === 'ds' ? 'D/s link' : 'relationship'}`}
-        </button>
-      </div>
-    </ProfileStudioInsetCard>
+          <div>
+            <label htmlFor={`${kind}-partner`} className="mb-1 block text-sm font-medium text-dc-text">
+              Link a connection (optional)
+            </label>
+            <p className="mb-2 text-xs text-dc-muted">
+              Tagged people must approve before the link appears publicly.
+            </p>
+            {friendOptions.length > 0 ?
+              <select
+                id={`${kind}-partner`}
+                value={partnerUsername}
+                onChange={(e) => setPartnerUsername(e.target.value)}
+                className="min-h-11 w-full rounded-lg border border-dc-border bg-dc-surface-muted px-3 py-2 text-sm text-dc-text"
+              >
+                <option value="">No linked profile</option>
+                {friendOptions.map((u) => (
+                  <option key={u} value={u}>
+                    @{u}
+                  </option>
+                ))}
+              </select>
+            : (
+              <input
+                id={`${kind}-partner`}
+                type="text"
+                placeholder="Friend username (connect first)"
+                value={partnerUsername}
+                onChange={(e) => setPartnerUsername(e.target.value)}
+                className="min-h-11 w-full rounded-lg border border-dc-border bg-dc-surface-muted px-3 py-2 text-sm text-dc-text"
+              />
+            )}
+          </div>
+          <div>
+            <label htmlFor={`${kind}-visibility`} className="mb-1 block text-sm font-medium text-dc-text">
+              Visibility
+            </label>
+            <select
+              id={`${kind}-visibility`}
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as typeof visibility)}
+              className="min-h-11 w-full rounded-lg border border-dc-border bg-dc-surface-muted px-3 py-2 text-sm text-dc-text"
+            >
+              <option value="hidden">Only me (hidden until approved)</option>
+              <option value="friends">Connections</option>
+              <option value="public">Public</option>
+            </select>
+          </div>
+          {partnerUsername.trim() ?
+            <p className="rounded-lg border border-dc-border bg-dc-surface-muted/40 px-3 py-2 text-xs text-dc-text-muted">
+              <span className="font-medium text-dc-text">Public preview: </span>
+              {viewerDisplayName} is in a {label.toLowerCase()} with @{partnerUsername.trim()}
+            </p>
+          : null}
+          <div>
+            <label htmlFor={`${kind}-note`} className="mb-1 block text-sm font-medium text-dc-text">
+              Note (optional)
+            </label>
+            <input
+              id={`${kind}-note`}
+              type="text"
+              placeholder="e.g. long distance, scene only"
+              value={customText}
+              onChange={(e) => setCustomText(e.target.value)}
+              className="min-h-11 w-full rounded-lg border border-dc-border bg-dc-surface-muted px-3 py-2 text-sm text-dc-text"
+            />
+          </div>
+          {error ? <p className="text-xs text-red-400" role="alert">{error}</p> : null}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void add()}
+            className="min-h-11 rounded-lg bg-dc-accent px-4 text-sm font-medium text-dc-accent-foreground hover:bg-dc-accent-hover disabled:opacity-50"
+          >
+            {busy ? 'Adding…' : addLabel}
+          </button>
+        </ProfileStudioInsetCard>
+      : null}
+    </div>
   )
 }
 

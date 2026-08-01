@@ -46,7 +46,9 @@ export default function ProfileBasicsPanel() {
       e.target.value = ''
       return
     }
-    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+    // Size is checked after client compress in uploadProfilePhotoFile.
+    // Soft warn only for absurd originals (e.g. >40 MB) that cannot be prepared.
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES * 2) {
       e.target.value = ''
       return
     }
@@ -208,9 +210,14 @@ export default function ProfileBasicsPanel() {
 
         <ProfileStudioInsetCard className="space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-dc-text">Profile photo</h3>
+            <h3 className="text-sm font-semibold text-dc-text">Profile picture</h3>
             <p className="text-xs text-dc-muted mt-1">
-              Your avatar on cards, search, and your public profile hero. JPG, PNG, or WebP up to {maxPhotoMb}MB.
+              Shown on cards, search, and your public profile. JPG, PNG, or WebP up to {maxPhotoMb}MB.
+              To choose an existing gallery photo, open{' '}
+              <Link to="/profile/edit/photos" className="text-dc-accent hover:underline">
+                Photos
+              </Link>
+              .
             </p>
           </div>
         {ctx.photoUploadStage ?

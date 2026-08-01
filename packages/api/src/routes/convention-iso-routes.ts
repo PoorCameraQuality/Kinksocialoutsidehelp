@@ -1,6 +1,7 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
+import { getIsoReadiness } from '@c2k/shared'
 import { getViewerUserId } from '../auth/viewer-user-id.js'
 import { resolveViewerFromRequest } from '../auth/resolve-viewer.js'
 import { db, schema } from '../db/index.js'
@@ -95,6 +96,7 @@ export async function registerConventionIsoRoutes(app: FastifyInstance) {
         displayName: schema.profiles.displayName,
         avatarUrl: schema.profiles.avatarUrl,
         body: schema.userIsoPosts.body,
+        structured: schema.userIsoPosts.structured,
         visibility: schema.userIsoPosts.visibility,
         acceptDmsViaIso: schema.userIsoPosts.acceptDmsViaIso,
         removedByStaffAt: schema.conventionIsoListings.removedByStaffAt,
@@ -118,6 +120,7 @@ export async function registerConventionIsoRoutes(app: FastifyInstance) {
       displayName: string | null
       avatarUrl: string | null
       body: string
+      structured: Record<string, unknown>
       visibility: string
       acceptDmsViaIso: boolean
       images: { sortOrder: number; url: string }[]
@@ -144,6 +147,7 @@ export async function registerConventionIsoRoutes(app: FastifyInstance) {
         displayName: row.displayName,
         avatarUrl: row.avatarUrl,
         body: row.body,
+        structured: (row.structured ?? {}) as Record<string, unknown>,
         visibility: row.visibility,
         acceptDmsViaIso: row.acceptDmsViaIso,
         images: imgs,
@@ -171,7 +175,18 @@ export async function registerConventionIsoRoutes(app: FastifyInstance) {
     }
     const [post] = await db.select().from(schema.userIsoPosts).where(eq(schema.userIsoPosts.userId, user.userId)).limit(1)
     if (!post) {
-      return reply.status(400).send({ error: 'Create your ISO on your profile before listing it here' })
+      return reply.status(400).send({ error: 'Save your ISO card before listing it here' })
+    }
+    if (post.visibility === 'PRIVATE') {
+      return reply.status(400).send({ error: 'Change visibility to Members or Public before listing' })
+    }
+    const readiness = getIsoReadiness(post.structured, post.body ?? '', post.visibility)
+    if (!readiness.canList) {
+      return reply.status(400).send({
+        error: readiness.missing.length
+          ? `Finish the basics before listing: ${readiness.missing.join(', ')}`
+          : 'Save a useful ISO card before listing it here',
+      })
     }
     if (parsed.data.listed) {
       await db

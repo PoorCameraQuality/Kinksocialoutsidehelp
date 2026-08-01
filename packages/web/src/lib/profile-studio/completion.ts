@@ -25,44 +25,73 @@ export type StudioCompletionInput = {
   pronounTags: string[]
 }
 
-export function deriveStudioSectionStatus(input: StudioCompletionInput): Record<ProfileEditTabId, StudioSectionStatus> {
-  const storyDone =
+function hasMeaningfulHeadline(bio: string): boolean {
+  const trimmed = bio.trim()
+  if (trimmed.length < 24) return false
+  const firstSentence = trimmed.split(/(?<=[.!?])\s+/)[0]?.trim() ?? trimmed
+  return firstSentence.length >= 16
+}
+
+export function deriveStudioSectionStatus(
+  input: StudioCompletionInput,
+): Record<ProfileEditTabId, StudioSectionStatus> {
+  const overviewReady =
     input.displayName.trim().length > 0 &&
-    input.locationLabel.trim().length > 0 &&
-    input.bio.trim().length > 0 &&
-    input.hasPhoto
+    (hasMeaningfulHeadline(input.bio) || input.bio.trim().length >= 80)
+
+  const overviewStarted =
+    input.displayName.trim().length > 0 ||
+    input.bio.trim().length > 0 ||
+    input.locationLabel.trim().length > 0
 
   const identityFilled =
     input.roles.length > 0 ||
     Boolean(input.lifestyleActivity.trim()) ||
     input.pronounTags.length > 0
 
-  const interestTarget = 3
+  const identityReady = identityFilled
+
   const interestCount = input.kinksCount
+  const interestsReady = interestCount >= 1
+
+  const presenceCount =
+    (input.lookingFor.length > 0 ? 1 : 0) +
+    (input.linksCount > 0 ? 1 : 0) +
+    (input.relationshipsCount > 0 ? 1 : 0)
+  const presenceReady = presenceCount > 0
 
   return {
-    basics: { complete: storyDone },
-    identity: { complete: identityFilled && input.roles.length > 0 && Boolean(input.lifestyleActivity.trim()) },
-    'looking-for': {
-      complete: input.lookingFor.length > 0,
-      progressLabel: input.lookingFor.length > 0 ? `${input.lookingFor.length} selected` : undefined,
+    overview: {
+      complete: overviewReady,
+      progressLabel:
+        overviewReady ? undefined
+        : overviewStarted ? 'In progress'
+        : undefined,
+    },
+    photos: {
+      complete: input.hasPhoto,
+      progressLabel: input.hasPhoto ? undefined : undefined,
+    },
+    identity: {
+      complete: identityReady,
+      progressLabel:
+        identityReady ? undefined
+        : identityFilled ? 'In progress'
+        : undefined,
     },
     interests: {
-      complete: interestCount >= interestTarget,
-      progressLabel: `${Math.min(interestCount, interestTarget)}/${interestTarget}`,
+      complete: interestsReady,
+      progressLabel:
+        interestsReady ? `${interestCount} selected`
+        : interestCount > 0 ? `${interestCount} selected`
+        : undefined,
     },
-    about: {
-      complete: input.bio.trim().length >= 120,
-      progressLabel: input.bio.trim().length >= 120 ? undefined : 'Add depth',
-    },
-    relationships: {
-      complete: input.relationshipsCount > 0,
-      progressLabel: input.relationshipsCount > 0 ? `${input.relationshipsCount}` : undefined,
-    },
-    privacy: { complete: true },
-    links: {
-      complete: input.linksCount > 0,
-      progressLabel: input.linksCount > 0 ? `${input.linksCount}` : undefined,
+    presence: {
+      complete: presenceReady,
+      progressLabel:
+        presenceReady ? undefined
+        : presenceCount > 0 ? `${presenceCount} of 3`
+        : undefined,
     },
   }
 }

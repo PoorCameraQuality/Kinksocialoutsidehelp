@@ -56,3 +56,33 @@
   box-shadow: var(--dc-shadow-panel);
   border: 1px solid var(--dc-border-subtle);
 }
+
+/*
+ * Black Velvet readability: give Play Space / Dancecard panels clearer edges on phones.
+ * Tokens already raise cream text + card elevation; this keeps section shells distinct.
+ */
+[data-dc-appearance='black-velvet'] .dc-attendee-hub {
+  color: var(--dc-text);
+}
+
+[data-dc-appearance='black-velvet'] .dc-attendee-hub .rounded-2xl.border {
+  border-color: var(--dc-border-subtle);
+  background-color: var(--dc-elevated-solid);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Play Spaces directory (/play) — same elevation ladder as attendee hub */
+[data-dc-appearance='black-velvet'] .dc-play-directory {
+  color: var(--dc-text);
+}
+
+[data-dc-appearance='black-velvet'] .dc-play-directory .rounded-2xl.border {
+  border-color: var(--dc-border-subtle);
+  background-color: var(--dc-elevated-solid);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), var(--dc-shadow-soft);
+}
+
+[data-dc-appearance='black-velvet'] .dc-play-directory__card:hover {
+  background-color: var(--dc-elevated-hover);
+  border-color: var(--dc-accent-border);
+}

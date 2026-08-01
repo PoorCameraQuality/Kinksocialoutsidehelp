@@ -1,9 +1,9 @@
 import {
   isOnboardingComplete,
-  safeInternalPath,
   type FeedSettings,
   type UserSettingsBundle,
 } from '@c2k/shared'
+import { coercePostAuthPath } from '@/lib/auth-links'
 
 export {
   isOnboardingComplete,
@@ -16,14 +16,14 @@ export {
 
 export function buildOnboardingHref(redirect?: string | null): string {
   const q = new URLSearchParams()
-  const after = safeInternalPath(redirect ?? undefined)
+  const after = coercePostAuthPath(redirect)
   if (after) q.set('redirect', after)
   const qs = q.toString()
   return qs ? `/onboarding?${qs}` : '/onboarding'
 }
 
 export async function resolvePostAuthPath(redirect?: string | null): Promise<string> {
-  const after = safeInternalPath(redirect ?? undefined) ?? '/home'
+  const after = coercePostAuthPath(redirect)
   try {
     const r = await fetch('/api/settings/me', { credentials: 'include' })
     if (!r.ok) return after
@@ -51,6 +51,9 @@ export function onboardingPathsExempt(pathname: string): boolean {
   if (pathname.startsWith('/admin')) return true
   if (pathname.startsWith('/support')) return true
   if (pathname.startsWith('/contact')) return true
+  // Guest/member dancecard share links should not force onboarding
+  if (/^\/play\/[^/]+\/s\/[^/]+$/.test(pathname)) return true
+  if (/^\/conventions\/[^/]+\/dancecard\/s\/[^/]+$/.test(pathname)) return true
   return false
 }
 

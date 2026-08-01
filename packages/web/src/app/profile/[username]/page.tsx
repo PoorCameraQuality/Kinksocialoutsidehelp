@@ -8,6 +8,7 @@ import { type ProfileIsoPayload } from '@/components/profile/ProfileIsoView'
 import ProfileLayout from '@/components/profile/layout/ProfileLayout'
 import ProfileHero from '@/components/profile/layout/ProfileHero'
 import ProfileGalleryStrip from '@/components/profile/layout/ProfileGalleryStrip'
+import ProfileMainNav, { type ProfileMainNavId } from '@/components/profile/layout/ProfileMainNav'
 import ProfileAboutBlock from '@/components/profile/story/ProfileAboutBlock'
 import ProfileInterestsCard from '@/components/profile/story/ProfileInterestsCard'
 import ProfileLookingForCard from '@/components/profile/story/ProfileLookingForCard'
@@ -159,14 +160,38 @@ export default function ProfileUsernamePage() {
     (section: CommunitySection) => selectTab('Community', section),
     [selectTab],
   )
-  const openPhotoGallery = useCallback(() => {
-    if (viewerIsSelf) {
-      navigate('/profile/edit')
-      return
+  const [mainNav, setMainNav] = useState<ProfileMainNavId>('overview')
+  const [ownerNoticeDismissed, setOwnerNoticeDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      return sessionStorage.getItem('c2k_profile_owner_notice_dismissed') === '1'
+    } catch {
+      return false
     }
+  })
+
+  const openPhotoGallery = useCallback(() => {
+    setMainNav('photos')
     selectTab('Media')
     scrollToProfileMediaGallery()
-  }, [viewerIsSelf, navigate, selectTab])
+  }, [selectTab])
+
+  const onSelectMainNav = useCallback(
+    (id: ProfileMainNavId) => {
+      setMainNav(id)
+      if (id === 'photos') {
+        selectTab('Media')
+        scrollToProfileMediaGallery()
+      } else if (id === 'connections') {
+        selectTab('Community', 'connections')
+      } else if (id === 'more') {
+        selectTab('Community', 'relationships')
+      } else if (id === 'posts') {
+        selectTab('Media')
+      }
+    },
+    [selectTab],
+  )
   const [reportOpen, setReportOpen] = useState<TsReportTarget | null>(null)
   const [photoReportOpen, setPhotoReportOpen] = useState<TsReportTarget | null>(null)
   const adultContentPref = useAdultContentPreference(isAuthenticated && !isFallback)
@@ -701,13 +726,32 @@ export default function ProfileUsernamePage() {
   )
 
   const profileSelfNotice =
-    viewerIsSelf ?
-      <p
-        className="mb-6 rounded-2xl bg-dc-accent/[0.06] px-4 py-3.5 text-sm leading-relaxed text-dc-text-muted ring-1 ring-inset ring-dc-accent/15"
+    viewerIsSelf && !ownerNoticeDismissed ?
+      <div
+        className="mb-5 flex flex-col gap-2 rounded-xl border border-dc-border-subtle bg-dc-elevated-solid/80 px-4 py-3 text-sm text-dc-text-muted sm:flex-row sm:items-center sm:justify-between"
         role="status"
       >
-        You are viewing your <strong className="text-dc-text">public profile</strong>. What others see on Kink Social.
-      </p>
+        <p>You are viewing your profile as other members see it.</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link to="/profile" className="font-medium text-dc-text hover:text-dc-accent hover:underline">
+            View dashboard
+          </Link>
+          <button
+            type="button"
+            className="text-dc-muted hover:text-dc-text"
+            onClick={() => {
+              setOwnerNoticeDismissed(true)
+              try {
+                sessionStorage.setItem('c2k_profile_owner_notice_dismissed', '1')
+              } catch {
+                /* ignore */
+              }
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
     : null
 
   const profileHero = (
@@ -721,12 +765,14 @@ export default function ProfileUsernamePage() {
       romanticOrientations={'romanticOrientations' in profile ? profile.romanticOrientations : undefined}
       location={profile.location}
       roles={profile.roles}
+      intro={'bio' in profile ? (profile.bio as string | null) : null}
       photoUrl={primaryPhotoUrl ?? undefined}
       photoCaption={primaryPhotoCaption ?? undefined}
       photoDisplaySettings={primaryPhotoDisplaySettings ?? undefined}
       photoCount={displayPhotos.length}
-      onOpenGallery={viewerIsSelf || displayPhotos.length > 0 ? openPhotoGallery : undefined}
-      managePhotosHref={viewerIsSelf ? '/profile/edit' : undefined}
+      onOpenGallery={displayPhotos.length > 0 || viewerIsSelf ? openPhotoGallery : undefined}
+      managePhotosHref={viewerIsSelf ? '/profile/edit/photos' : undefined}
+      editProfileHref={viewerIsSelf ? '/profile/edit' : undefined}
       actions={profileHeroActions}
     />
   )
@@ -736,10 +782,14 @@ export default function ProfileUsernamePage() {
       photos={displayPhotos}
       viewer={mediaViewer}
       totalCount={displayPhotos.length}
-      onViewAll={viewerIsSelf ? undefined : openPhotoGallery}
-      managePhotosHref={viewerIsSelf ? '/profile/edit' : undefined}
+      onViewAll={openPhotoGallery}
+      managePhotosHref={viewerIsSelf ? '/profile/edit/photos' : undefined}
       viewerIsOwner={viewerIsSelf}
     />
+  )
+
+  const profileNav = (
+    <ProfileMainNav active={mainNav} onSelect={onSelectMainNav} />
   )
 
   const profilePrimary = (
@@ -861,7 +911,12 @@ export default function ProfileUsernamePage() {
                 }
                 profilePhotosSlot={
                   viewerIsSelf && isAuthenticated && !isFallback ?
-                    <ProfilePhotoManager apiBacked embedded onPhotosChanged={() => void loadPublicProfile()} />
+                    <ProfilePhotoManager
+                      apiBacked
+                      embedded
+                      studioLinkOnly
+                      onPhotosChanged={() => void loadPublicProfile()}
+                    />
                   : displayPhotos.length === 0 ?
                     <EmptyState title="No photos" message="This member has not shared profile photos." inline compact className="text-left" />
                   : <ProfilePhotoGallery
@@ -927,15 +982,41 @@ export default function ProfileUsernamePage() {
       </p>
     : null
 
+  const showOverview = mainNav === 'overview'
+  const showPostsOnly = mainNav === 'posts'
+  const showExtended = mainNav === 'photos' || mainNav === 'connections' || mainNav === 'more'
+
   return (
     <>
       <ProfileLayout
         alerts={profileSelfNotice}
         hero={profileHero}
         gallery={profileGallery}
-        primary={profilePrimary}
-        secondary={profileSecondary}
-        more={profileMore}
+        nav={profileNav}
+        hideOverviewGrid={!showOverview && !showPostsOnly}
+        primary={
+          showOverview ? profilePrimary
+          : showPostsOnly && showProfilePosts ?
+            <ProfileRecentPostsSection
+              viewerIsOwner={viewerIsSelf}
+              viewerUsername={viewerUsername}
+              profileUsername={username}
+              items={profileFeedPosts.items}
+              status={profileFeedPosts.status}
+              error={profileFeedPosts.error}
+              onRetry={() => void profileFeedPosts.reload()}
+              graphStatus={viewerIsSelf ? null : graphStatus}
+              canMessage={!viewerIsSelf && (graphStatus?.canMessage === true)}
+              onFollow={viewerIsSelf ? undefined : () => void toggleFollow()}
+              onConnect={viewerIsSelf ? undefined : () => void sendConnectionRequest()}
+              limit={20}
+            />
+          : showPostsOnly ?
+            <p className="text-sm text-dc-text-muted">Sign in to view posts.</p>
+          : <div />
+        }
+        secondary={showOverview ? profileSecondary : undefined}
+        more={showExtended ? profileMore : null}
         footer={profileFooter}
       />
       <TsReportModal open={reportOpen} onClose={() => setReportOpen(null)} />

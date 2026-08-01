@@ -2779,6 +2779,8 @@ export const userIsoPosts = pgTable(
       .primaryKey()
       .references(() => users.id, { onDelete: 'cascade' }),
     body: text('body').notNull().default(''),
+    /** Structured ISO header / menu / scene pitches (iso_v2). */
+    structured: jsonb('structured').$type<Record<string, unknown>>().notNull().default({}),
     visibility: profileVisibilityEnum('visibility').notNull().default('MEMBERS'),
     acceptDmsViaIso: boolean('accept_dms_via_iso').notNull().default(false),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -4438,5 +4440,345 @@ export const stripeWebhookEvents = pgTable(
 
 export type StripeCheckoutSessionRow = typeof stripeCheckoutSessions.$inferSelect
 export type StripeWebhookEventRow = typeof stripeWebhookEvents.$inferSelect
+
+/* --- Play Spaces (user-owned dancecard gatherings; not org conventions) --- */
+
+export const playSpaces = pgTable(
+  'play_spaces',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: varchar('slug', { length: 128 }).notNull().unique(),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    locationLabel: varchar('location_label', { length: 512 }),
+    /** public = listed in directory; unlisted = invite/link only; private = invite code required */
+    visibility: varchar('visibility', { length: 32 }).notNull().default('public'),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    timezone: varchar('timezone', { length: 64 }).notNull().default('America/New_York'),
+    /** Opaque join token for private/unlisted spaces (shown to owner). */
+    inviteCode: varchar('invite_code', { length: 64 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('play_spaces_owner_idx').on(t.ownerUserId),
+    index('play_spaces_starts_at_idx').on(t.startsAt),
+    index('play_spaces_visibility_idx').on(t.visibility),
+  ],
+)
+
+export const playSpaceMembers = pgTable(
+  'play_space_members',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: varchar('role', { length: 32 }).notNull().default('member'),
+    joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('play_space_members_space_user_uq').on(t.playSpaceId, t.userId),
+    index('play_space_members_user_idx').on(t.userId),
+  ],
+)
+
+/** Personal dancecard blocks inside a play space (separate from convention dancecard_entries). */
+export const playSpaceDancecardEntries = pgTable(
+  'play_space_dancecard_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    location: varchar('location', { length: 512 }),
+    notes: text('notes'),
+    /** manual | slot_signup | scene_booking */
+    sourceKind: varchar('source_kind', { length: 32 }).notNull().default('manual'),
+    sourceId: uuid('source_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('play_space_dancecard_entries_space_user_idx').on(t.playSpaceId, t.userId)],
+)
+
+export const playSpaceDancecardPrefs = pgTable(
+  'play_space_dancecard_prefs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    bufferMinutes: integer('buffer_minutes').notNull().default(0),
+    /** Compare/profile fields for this play space */
+    displayName: varchar('display_name', { length: 128 }),
+    bio: text('bio'),
+    avatarUrl: text('avatar_url'),
+    contactNote: varchar('contact_note', { length: 512 }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('play_space_dancecard_prefs_space_user_uq').on(t.playSpaceId, t.userId),
+    index('play_space_dancecard_prefs_user_idx').on(t.userId),
+  ],
+)
+
+export const playSpaceDancecardShareLinks = pgTable(
+  'play_space_dancecard_share_links',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    token: varchar('token', { length: 64 }).notNull().unique(),
+    label: varchar('label', { length: 128 }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('play_space_dancecard_share_links_space_owner_idx').on(t.playSpaceId, t.ownerUserId)],
+)
+
+/**
+ * Booking / reserve requests. guestUserId nullable so guests without a KS account
+ * can request via share link (guestDisplayName required in that case).
+ */
+export const playSpaceBookingRequests = pgTable(
+  'play_space_booking_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    hostUserId: uuid('host_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    guestUserId: uuid('guest_user_id').references(() => users.id, { onDelete: 'cascade' }),
+    guestDisplayName: varchar('guest_display_name', { length: 128 }),
+    guestContact: varchar('guest_contact', { length: 255 }),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    /** Free-text meet spot (e.g. "dungeon", "barn loft") — not a map pin. */
+    location: varchar('location', { length: 512 }),
+    description: text('description').notNull().default(''),
+    status: varchar('status', { length: 32 }).notNull().default('PENDING'),
+    hostEntryId: uuid('host_entry_id').references(() => playSpaceDancecardEntries.id, {
+      onDelete: 'set null',
+    }),
+    guestEntryId: uuid('guest_entry_id').references(() => playSpaceDancecardEntries.id, {
+      onDelete: 'set null',
+    }),
+    cancelledByUserId: uuid('cancelled_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('play_space_booking_requests_host_status_idx').on(t.hostUserId, t.status),
+    index('play_space_booking_requests_space_idx').on(t.playSpaceId),
+  ],
+)
+
+export const playSpaceProgramSlots = pgTable(
+  'play_space_program_slots',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    location: varchar('location', { length: 512 }),
+    published: boolean('published').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('play_space_program_slots_space_starts_idx').on(t.playSpaceId, t.startsAt)],
+)
+
+export const playSpaceMaps = pgTable(
+  'play_space_maps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    label: varchar('label', { length: 255 }).notNull().default('Venue map'),
+    imageUrl: text('image_url').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('play_space_maps_space_idx').on(t.playSpaceId)],
+)
+
+/** Play-space lounge chat (mirrors convention hub channels). */
+export const playSpaceHubChannels = pgTable(
+  'play_space_hub_channels',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    slug: varchar('slug', { length: 64 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    kind: varchar('kind', { length: 32 }).notNull().default('CHAT'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('play_space_hub_channels_space_slug_idx').on(t.playSpaceId, t.slug),
+    index('play_space_hub_channels_space_idx').on(t.playSpaceId, t.sortOrder),
+  ],
+)
+
+export const playSpaceHubChannelMessages = pgTable(
+  'play_space_hub_channel_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    channelId: uuid('channel_id')
+      .notNull()
+      .references(() => playSpaceHubChannels.id, { onDelete: 'cascade' }),
+    senderId: uuid('sender_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    parentMessageId: uuid('parent_message_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('play_space_hub_channel_messages_channel_idx').on(t.channelId, t.createdAt)],
+)
+
+export const playSpaceHubChannelReads = pgTable(
+  'play_space_hub_channel_reads',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    channelId: uuid('channel_id')
+      .notNull()
+      .references(() => playSpaceHubChannels.id, { onDelete: 'cascade' }),
+    lastReadAt: timestamp('last_read_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.channelId] })],
+)
+
+/** Member lists their profile ISO on this play space board. */
+export const playSpaceIsoListings = pgTable(
+  'play_space_iso_listings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    removedByStaffAt: timestamp('removed_by_staff_at', { withTimezone: true }),
+    removedByUserId: uuid('removed_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  },
+  (t) => [
+    uniqueIndex('play_space_iso_listings_space_user_idx').on(t.playSpaceId, t.userId),
+    index('play_space_iso_listings_space_idx').on(t.playSpaceId),
+  ],
+)
+
+/** Pickup-play matchmaker (opt-in per play space; default enabled for Dancecard hubs). */
+export const playSpaceMatchmakerSettings = pgTable('play_space_matchmaker_settings', {
+  playSpaceId: uuid('play_space_id')
+    .primaryKey()
+    .references(() => playSpaces.id, { onDelete: 'cascade' }),
+  enabled: boolean('enabled').notNull().default(true),
+  formSchema: jsonb('form_schema').notNull().default(sql`'{"kind":"pickup_play_v1"}'::jsonb`),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const playSpaceMatchmakerResponses = pgTable(
+  'play_space_matchmaker_responses',
+  {
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    answers: jsonb('answers').notNull().default(sql`'{}'::jsonb`),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('play_space_matchmaker_responses_space_user_idx').on(t.playSpaceId, t.userId)],
+)
+
+export const playSpaceMatchmakerSwipes = pgTable(
+  'play_space_matchmaker_swipes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    actorId: uuid('actor_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    targetId: uuid('target_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    liked: boolean('liked').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('play_space_matchmaker_swipes_space_actor_target_idx').on(
+      t.playSpaceId,
+      t.actorId,
+      t.targetId,
+    ),
+    index('play_space_matchmaker_swipes_space_actor_idx').on(t.playSpaceId, t.actorId),
+  ],
+)
+
+export const playSpaceMatchmakerMatches = pgTable(
+  'play_space_matchmaker_matches',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    playSpaceId: uuid('play_space_id')
+      .notNull()
+      .references(() => playSpaces.id, { onDelete: 'cascade' }),
+    userLow: uuid('user_low')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    userHigh: uuid('user_high')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('play_space_matchmaker_matches_space_pair_idx').on(t.playSpaceId, t.userLow, t.userHigh)],
+)
+
+export type PlaySpaceRow = typeof playSpaces.$inferSelect
+export type PlaySpaceMemberRow = typeof playSpaceMembers.$inferSelect
+export type PlaySpaceDancecardEntryRow = typeof playSpaceDancecardEntries.$inferSelect
+export type PlaySpaceDancecardPrefsRow = typeof playSpaceDancecardPrefs.$inferSelect
+export type PlaySpaceBookingRequestRow = typeof playSpaceBookingRequests.$inferSelect
+export type PlaySpaceProgramSlotRow = typeof playSpaceProgramSlots.$inferSelect
+export type PlaySpaceMapRow = typeof playSpaceMaps.$inferSelect
+export type PlaySpaceHubChannelRow = typeof playSpaceHubChannels.$inferSelect
 
 export * from './convention-organizer-schema.js'

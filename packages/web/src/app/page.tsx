@@ -15,6 +15,8 @@ import MobilePublicNav from '@/components/landing/MobilePublicNav'
 import PublicNav from '@/components/landing/PublicNav'
 import LandingPageMeta from '@/components/seo/LandingPageMeta'
 import { useAuth } from '@/contexts/AuthContext'
+import { buildLoginHrefFromLegacySearch, coercePostAuthPath } from '@/lib/auth-links'
+import { isDancecardHost } from '@/lib/dancecard-host'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { safeInternalPath } from '@c2k/shared'
 
@@ -24,7 +26,30 @@ export default function LandingPage() {
   const rawRedirect = searchParams.get('redirect') ?? undefined
   const redirectAfterLogin = safeInternalPath(rawRedirect)
   const loginParam = searchParams.get('login')
+  const signupParam = searchParams.get('signup')
   const loginFocus = loginParam === '1' || loginParam === 'true'
+  const wantsAuth = loginFocus || signupParam === '1'
+
+  /**
+   * Dancecard must never mount the apex marketing LoginCard.
+   * Remounts of that card (redirect races) were the mobile flicker.
+   */
+  if (isDancecardHost()) {
+    if (wantsAuth) {
+      return <Navigate to={buildLoginHrefFromLegacySearch(searchParams.toString())} replace />
+    }
+    if (status === 'ready' && isAuthenticated && !isFallback) {
+      return <Navigate to={coercePostAuthPath(redirectAfterLogin)} replace />
+    }
+    if (status === 'loading') {
+      return (
+        <div className="flex min-h-[40vh] items-center justify-center px-4" aria-busy="true">
+          <p className="text-sm text-dc-muted">Loading…</p>
+        </div>
+      )
+    }
+    return <Navigate to="/play" replace />
+  }
 
   const signupProps = {
     defaultTab: loginFocus ? ('login' as const) : ('signup' as const),
@@ -33,7 +58,7 @@ export default function LandingPage() {
   }
 
   if (status === 'ready' && isAuthenticated && !isFallback) {
-    return <Navigate to="/home" replace />
+    return <Navigate to={coercePostAuthPath(redirectAfterLogin)} replace />
   }
 
   return (

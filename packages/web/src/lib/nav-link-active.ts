@@ -14,5 +14,6 @@ export function navLinkIsActive(pathname: string, href: string): boolean {
   if (href === '/connections') return pathname.startsWith('/connections')
   if (href === '/discovery') return pathname === '/discovery'
   if (href === '/places') return pathname === '/places' || pathname.startsWith('/places/')
+  if (href === '/play') return pathname === '/play' || pathname.startsWith('/play/')
   return pathname === href
 }

@@ -12,6 +12,8 @@ import {
 
   type MediaVisibility,
 
+  type ProfilePhotoDisplaySettings,
+
 } from '@c2k/shared'
 import type { PersonalPhotoQuota } from '@c2k/shared'
 
@@ -80,6 +82,8 @@ export type ApiProfilePhoto = {
 
   order: number
 
+  displaySettings?: ProfilePhotoDisplaySettings | null
+
   mediaAssetId?: string | null
 
   uploadStatus?: MediaUploadStatus | null
@@ -99,6 +103,8 @@ export type ApiProfilePhoto = {
 
 
 export type ProfilePhoto = MockProfilePhoto & {
+
+  displaySettings?: ProfilePhotoDisplaySettings | null
 
   mediaAssetId?: string | null
 
@@ -133,6 +139,8 @@ function mapApiPhoto(photo: ApiProfilePhoto): ProfilePhoto {
     caption: photo.caption ?? undefined,
 
     order: photo.order,
+
+    displaySettings: photo.displaySettings ?? undefined,
 
     tags: [],
 
@@ -218,6 +226,20 @@ export interface UseProfilePhotosReturn {
 
   deletePhoto: (id: string) => void
 
+  /** Promote an existing gallery photo to profile picture (sort_order = 0). */
+  setPrimary: (id: string) => Promise<boolean>
+
+  settingPrimaryId: string | null
+
+  /**
+   * Upload + attach. By default appends to gallery.
+   * Pass `{ makePrimary: true }` to also set as profile picture when eligible.
+   */
+  addPhotoWithOptions: (
+    result: PhotoUploadResult,
+    options?: { makePrimary?: boolean },
+  ) => Promise<void>
+
 }
 
 
@@ -255,7 +277,7 @@ export function useProfilePhotos(options: UseProfilePhotosOptions = {}): UseProf
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
-
+  const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null)
 
   const loadApiPhotos = useCallback(async () => {
 
@@ -348,9 +370,11 @@ export function useProfilePhotos(options: UseProfilePhotosOptions = {}): UseProf
 
 
 
-  const addPhoto = useCallback(
+  const addPhotoWithOptions = useCallback(
 
-    async (result: PhotoUploadResult) => {
+    async (result: PhotoUploadResult, options?: { makePrimary?: boolean }) => {
+
+      const makePrimary = Boolean(options?.makePrimary)
 
       if (apiBacked) {
 
@@ -395,7 +419,8 @@ export function useProfilePhotos(options: UseProfilePhotosOptions = {}): UseProf
 
           setUploadStage('processing')
 
-          const attached = await attachUploadedProfilePhoto(uploaded, photos.length)
+          const sortOrder = makePrimary ? 0 : photos.length
+          const attached = await attachUploadedProfilePhoto(uploaded, sortOrder)
           if (!attached.ok) {
             throw new Error(attached.error)
           }
@@ -423,32 +448,73 @@ export function useProfilePhotos(options: UseProfilePhotosOptions = {}): UseProf
 
       }
 
-
-
       const newPhoto: ProfilePhoto = {
-
         id: `pp-${Date.now()}`,
-
         url: result.objectUrl,
-
         caption: result.caption,
-
-        order: photos.length,
-
+        order: makePrimary ? 0 : photos.length,
         tags: [],
-
       }
 
-      persistLocal([...photos, newPhoto])
+      const next =
+        makePrimary ?
+          [{ ...newPhoto, order: 0 }, ...photos.map((p, i) => ({ ...p, order: i + 1 }))]
+        : [...photos, newPhoto]
 
+      persistLocal(next)
       setAddPhotoOpen(false)
-
       onPhotosChanged?.()
-
     },
 
-    [apiBacked, photos, persistLocal, loadApiPhotos, onPhotosChanged]
+    [apiBacked, photos, persistLocal, loadApiPhotos, onPhotosChanged],
+  )
 
+  const addPhoto = useCallback(
+    async (result: PhotoUploadResult) => {
+      await addPhotoWithOptions(result, { makePrimary: false })
+    },
+    [addPhotoWithOptions],
+  )
+
+  const setPrimary = useCallback(
+    async (id: string) => {
+      if (!apiBacked) {
+        const target = photos.find((p) => p.id === id)
+        if (!target) return false
+        const rest = photos.filter((p) => p.id !== id).map((p, i) => ({ ...p, order: i + 1 }))
+        persistLocal([{ ...target, order: 0 }, ...rest])
+        onPhotosChanged?.()
+        return true
+      }
+
+      setError(null)
+      setSettingPrimaryId(id)
+      try {
+        const r = await fetch(`/api/profile/me/photos/${encodeURIComponent(id)}/set-primary`, {
+          method: 'POST',
+          credentials: 'include',
+        })
+        if (!r.ok) {
+          const data = (await r.json().catch(() => ({}))) as { error?: string }
+          setError(typeof data.error === 'string' ? data.error : 'Could not set profile picture.')
+          return false
+        }
+        const data = (await r.json()) as { photos?: ApiProfilePhoto[] }
+        if (data.photos) {
+          setPhotos(data.photos.map(mapApiPhoto))
+        } else {
+          await loadApiPhotos()
+        }
+        onPhotosChanged?.()
+        return true
+      } catch {
+        setError('Could not set profile picture.')
+        return false
+      } finally {
+        setSettingPrimaryId(null)
+      }
+    },
+    [apiBacked, photos, persistLocal, loadApiPhotos, onPhotosChanged],
   )
 
 
@@ -591,12 +657,9 @@ export function useProfilePhotos(options: UseProfilePhotosOptions = {}): UseProf
 
         }
 
-        setPhotos((prev) => prev.filter((photo) => photo.id !== id))
-
         setDeleteConfirmId(null)
-
+        await loadApiPhotos()
         onPhotosChanged?.()
-
         return
 
       }
@@ -615,7 +678,7 @@ export function useProfilePhotos(options: UseProfilePhotosOptions = {}): UseProf
 
     },
 
-    [apiBacked, photos, persistLocal, onPhotosChanged]
+    [apiBacked, photos, persistLocal, loadApiPhotos, onPhotosChanged]
 
   )
 
@@ -676,6 +739,12 @@ export function useProfilePhotos(options: UseProfilePhotosOptions = {}): UseProf
     setDeleteConfirmId,
 
     deletePhoto,
+
+    setPrimary,
+
+    settingPrimaryId,
+
+    addPhotoWithOptions,
 
   }
 

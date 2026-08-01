@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { safeInternalPath, validatePublicUsername } from '@c2k/shared'
+import { validatePublicUsername } from '@c2k/shared'
+import { coercePostAuthPath } from '@/lib/auth-links'
+import { fetchAlphaMode } from '@/lib/alpha-mode'
 import { buildOnboardingHref, resolvePostAuthPath } from '@/lib/onboarding'
 import FormField from '@/components/ui/FormField'
 import { premiumInputClass } from '@/lib/card-surface'
@@ -169,20 +171,14 @@ export default function LoginCard({
 
   useEffect(() => {
     let cancelled = false
-    void fetch('/api/auth/registration-policy', { credentials: 'same-origin' })
-      .then(async (r) => {
-        if (!r.ok) return
-        const data = (await r.json()) as { registrationOpen?: boolean; inviteRequired?: boolean }
-        if (!cancelled) {
-          setRegistrationPolicy({
-            registrationOpen: data.registrationOpen !== false,
-            inviteRequired: data.inviteRequired === true,
-          })
-        }
-      })
-      .catch(() => {
-        /* keep defaults */
-      })
+    void fetchAlphaMode().then((mode) => {
+      if (!cancelled) {
+        setRegistrationPolicy({
+          registrationOpen: mode.registrationOpen,
+          inviteRequired: mode.inviteRequired,
+        })
+      }
+    })
     return () => {
       cancelled = true
     }
@@ -272,8 +268,7 @@ export default function LoginCard({
         return
       }
       await refresh()
-      const afterComplete = safeInternalPath(redirectAfterLogin) ?? '/home'
-      navigate(buildOnboardingHref(afterComplete))
+      navigate(buildOnboardingHref(coercePostAuthPath(redirectAfterLogin)))
     } catch {
       setSignupError('Network error. Try again.')
     } finally {

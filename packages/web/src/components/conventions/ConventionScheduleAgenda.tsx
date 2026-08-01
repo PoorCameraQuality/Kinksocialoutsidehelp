@@ -308,31 +308,41 @@ function SessionBlock({
             {desc ?
               <div className="mt-2">
                 <p
-                  className={`text-sm leading-relaxed text-dc-text-muted motion-safe:transition-[max-height] motion-safe:duration-300 ${
-                    descOpen || !descLong ? '' : 'line-clamp-3'
+                  className={`text-sm leading-relaxed text-dc-text-muted ${
+                    descOpen ? '' : 'line-clamp-2 md:line-clamp-3'
                   }`}
                 >
                   {desc}
                 </p>
-                {descLong ?
+                {(descLong || desc.length > 90) && !descOpen ?
                   <button
                     type="button"
-                    className="mt-1.5 min-h-11 rounded-lg px-2 text-left text-sm font-medium text-dc-accent underline-offset-2 transition-colors motion-safe:duration-150 hover:bg-white/[0.05] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent active:bg-white/[0.07]"
-                    onClick={() => setDescOpen((o) => !o)}
-                    aria-expanded={descOpen}
+                    className="mt-1 min-h-11 rounded-lg px-2 text-left text-sm font-medium text-dc-accent hover:underline"
+                    onClick={() => setDescOpen(true)}
+                    aria-expanded={false}
                   >
-                    {descOpen ? 'Show less' : 'Read more'}
+                    More
+                  </button>
+                : null}
+                {descOpen ?
+                  <button
+                    type="button"
+                    className="mt-1 min-h-11 rounded-lg px-2 text-left text-sm font-medium text-dc-accent hover:underline"
+                    onClick={() => setDescOpen(false)}
+                    aria-expanded
+                  >
+                    Show less
                   </button>
                 : null}
               </div>
             : null}
 
             <div className="mt-4 flex flex-col gap-3 border-t border-dc-border-subtle pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 {showDancecard ?
                   <button
                     type="button"
-                    className="inline-flex min-h-11 items-center rounded-xl bg-dc-accent px-4 text-sm font-semibold text-dc-accent-foreground shadow-sm transition-[background-color,box-shadow,transform] motion-safe:duration-150 hover:bg-dc-accent-hover hover:shadow-md motion-safe:hover:-translate-y-px active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent motion-reduce:hover:translate-y-0"
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-dc-accent px-4 text-sm font-semibold text-dc-accent-foreground shadow-sm transition-[background-color,box-shadow,transform] motion-safe:duration-150 hover:bg-dc-accent-hover hover:shadow-md motion-safe:hover:-translate-y-px active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent motion-reduce:hover:translate-y-0 sm:w-auto"
                     onClick={() => onAddToDancecard(slot.id)}
                   >
                     Add to dancecard
@@ -372,68 +382,75 @@ function CompactSlotRow({
   const [open, setOpen] = useState(false)
   const desc = slot.description?.trim() ?? ''
   const duration = formatDuration(slot.startsAt, slot.endsAt)
+  const metaBits = [
+    duration,
+    slot.trackLabel?.trim(),
+    slot.roomLabel?.trim(),
+    slot.location?.trim(),
+  ].filter(Boolean) as string[]
   const presenterLine = slot.presenters
     .slice(0, 4)
     .map((p) => p.displayName?.trim() || p.username)
     .join(' · ')
   const overflow = Math.max(0, slot.presenters.length - 4)
+  const actionCount = (desc ? 1 : 0) + (showDancecard ? 1 : 0) + (slot.linkUrl ? 1 : 0)
 
   return (
-    <li id={`conv-slot-${slot.id}`} className="group scroll-mt-28 rounded-xl py-2 first:pt-1 motion-safe:transition-[background-color,box-shadow] motion-safe:duration-150 hover:bg-white/[0.03] focus-within:bg-white/[0.04] focus-within:ring-1 focus-within:ring-dc-accent/25">
-      <div className="flex flex-col gap-2 px-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="min-w-0 flex-1 space-y-1">
-          <p className="dc-session-title text-sm font-semibold leading-snug">{slot.title}</p>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-dc-muted">
-            {duration ? <span className="tabular-nums">{duration}</span> : null}
-            {duration && (slot.roomLabel || slot.trackLabel) ? <span aria-hidden>·</span> : null}
-            {slot.trackLabel?.trim() ?
-              <span className="rounded bg-white/[0.06] px-1.5 py-0.5 text-dc-text-muted transition-colors motion-safe:duration-150 group-hover:bg-white/[0.09]">
-                {slot.trackLabel.trim()}
-              </span>
-            : null}
-            {slot.roomLabel?.trim() ?
-              <span className="rounded bg-white/[0.06] px-1.5 py-0.5 text-dc-text-muted transition-colors motion-safe:duration-150 group-hover:bg-white/[0.09]">
-                {slot.roomLabel.trim()}
-              </span>
-            : null}
-            {slot.location?.trim() ?
-              <span className="truncate text-dc-muted">{slot.location.trim()}</span>
-            : null}
-          </div>
-          {presenterLine ?
-            <p className="text-[11px] leading-relaxed text-dc-text-muted">
-              {presenterLine}
-              {overflow > 0 ? <span className="text-dc-muted"> · +{overflow}</span> : null}
-            </p>
-          : null}
+    <li
+      id={`conv-slot-${slot.id}`}
+      className="scroll-mt-28 rounded-xl border border-dc-border bg-dc-elevated p-3 shadow-[var(--dc-shadow-soft)]"
+    >
+      <div className="min-w-0">
+        <p className="dc-session-title text-base font-semibold leading-snug text-dc-text">{slot.title}</p>
+        {metaBits.length > 0 ?
+          <p className="mt-1 text-xs leading-snug text-dc-muted">{metaBits.join(' · ')}</p>
+        : null}
+        {presenterLine ?
+          <p className="mt-1 text-xs leading-snug text-dc-text-muted">
+            {presenterLine}
+            {overflow > 0 ? <span className="text-dc-muted"> · +{overflow}</span> : null}
+          </p>
+        : null}
+        {open && desc ?
+          <p className="mt-2 whitespace-pre-wrap rounded-lg border border-dc-border/70 bg-dc-surface-muted/80 px-2.5 py-2 text-xs leading-relaxed text-dc-text-muted">
+            {desc}
+          </p>
+        : null}
+      </div>
+
+      {actionCount > 0 ?
+        <div
+          className={`mt-3 grid gap-2 ${
+            actionCount === 1 ? 'grid-cols-1' : actionCount === 2 ? 'grid-cols-2' : 'grid-cols-3'
+          }`}
+        >
           {desc ?
-            <div className="pt-0.5">
-              <button
-                type="button"
-                className="rounded-md px-1.5 py-1 text-left text-[11px] font-medium text-dc-accent underline-offset-2 transition-colors motion-safe:duration-150 hover:bg-dc-accent/10 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent active:bg-dc-accent/15"
-                aria-expanded={open}
-                onClick={() => setOpen((o) => !o)}
-              >
-                {open ? 'Hide description' : 'Description'}
-              </button>
-              {open ? <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-dc-text-muted">{desc}</p> : null}
-            </div>
+            <button
+              type="button"
+              className={`inline-flex min-h-11 items-center justify-center rounded-xl px-3 text-sm font-semibold transition-colors ${
+                open ?
+                  'bg-dc-accent text-dc-accent-foreground'
+                : 'border border-dc-border bg-dc-surface-muted text-dc-text hover:border-dc-accent/50 hover:bg-dc-accent-muted'
+              }`}
+              aria-expanded={open}
+              onClick={() => setOpen((o) => !o)}
+            >
+              {open ? 'Hide' : 'Description'}
+            </button>
           : null}
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end">
           {showDancecard ?
             <button
               type="button"
-              className="inline-flex min-h-9 items-center rounded-lg bg-dc-accent/18 px-3 text-xs font-medium text-dc-accent shadow-sm transition-[background-color,box-shadow,transform] motion-safe:duration-150 hover:bg-dc-accent/30 hover:shadow-md motion-safe:hover:-translate-y-px active:translate-y-0 active:bg-dc-accent/22 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent motion-reduce:hover:translate-y-0"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-dc-accent px-2.5 text-sm font-semibold leading-tight text-dc-accent-foreground hover:bg-dc-accent-hover sm:px-3"
               onClick={() => onAddToDancecard(slot.id)}
             >
-              Dancecard
+              Add to dancecard
             </button>
           : null}
           {slot.linkUrl ?
             <a
               href={slot.linkUrl}
-              className="rounded-md px-2 py-1.5 text-xs font-medium text-dc-text-muted underline-offset-2 transition-colors motion-safe:duration-150 hover:bg-white/[0.06] hover:text-dc-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent active:bg-white/[0.09]"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-dc-border bg-dc-surface-muted px-3 text-sm font-semibold text-dc-text hover:border-dc-accent/50"
               target="_blank"
               rel="noreferrer"
             >
@@ -441,7 +458,7 @@ function CompactSlotRow({
             </a>
           : null}
         </div>
-      </div>
+      : null}
     </li>
   )
 }
@@ -461,21 +478,23 @@ function CompactDaySchedule({
   if (buckets.length === 0) return <p className="text-sm text-dc-muted">No sessions this day.</p>
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {buckets.map(({ startIso, slots }) => (
-        <section key={startIso} aria-labelledby={`conv-time-${slots[0]!.id}`}>
-          <h4
-            id={`conv-time-${slots[0]!.id}`}
-            className="border-b border-white/[0.08] pb-1.5 text-sm font-semibold tabular-nums text-dc-accent transition-[border-color,opacity] motion-safe:duration-200 hover:border-dc-accent-border/40 hover:opacity-95"
-          >
-            {formatTimeHeading(startIso, timeZone)}
+        <section key={startIso} aria-labelledby={`conv-time-${slots[0]!.id}`} className="space-y-2">
+          <div className="flex items-center gap-2">
+            <h4
+              id={`conv-time-${slots[0]!.id}`}
+              className="inline-flex min-h-9 items-center rounded-lg bg-dc-accent px-2.5 text-sm font-semibold tabular-nums text-dc-accent-foreground"
+            >
+              {formatTimeHeading(startIso, timeZone)}
+            </h4>
             {slots.length > 1 ?
-              <span className="ml-2 text-[11px] font-normal normal-case text-dc-muted">
-                {slots.length} at this time
+              <span className="text-[11px] text-dc-muted">
+                {slots.length} sessions
               </span>
             : null}
-          </h4>
-          <ul className="divide-y divide-white/[0.06]">
+          </div>
+          <ul className="space-y-2">
             {slots.map((s) => (
               <CompactSlotRow key={s.id} slot={s} onAddToDancecard={onAddToDancecard} showDancecard={showDancecard} />
             ))}
@@ -576,9 +595,11 @@ export default function ConventionScheduleAgenda({
 
   return (
     <div className="space-y-6">
-      <div className="sticky top-0 z-10 -mx-1 border-b border-dc-border-subtle bg-dc-elevated-solid/85 px-1 pb-3 pt-0.5 backdrop-blur-md supports-[backdrop-filter]:bg-dc-elevated-solid/70">
+      <div className="sticky top-[6.75rem] z-10 -mx-1 border-b border-dc-border-subtle bg-dc-elevated-solid/90 px-1 pb-2 pt-0.5 backdrop-blur-md supports-[backdrop-filter]:bg-dc-elevated-solid/75 md:top-0 md:pb-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-dc-muted">Program days</p>
+          <p className="hidden text-[11px] font-medium uppercase tracking-wide text-dc-muted md:block">
+            Program days
+          </p>
           <nav
             className="flex shrink-0 flex-wrap items-center justify-end gap-1"
             role="tablist"
@@ -600,7 +621,7 @@ export default function ConventionScheduleAgenda({
         </div>
         <div
           ref={tablistRef}
-          className="mt-2 flex gap-2 overflow-x-auto pb-1"
+          className="mt-2 flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="tablist"
           aria-label="Select program day"
           onKeyDown={onTabListKeyDown}
@@ -611,15 +632,25 @@ export default function ConventionScheduleAgenda({
             id="conv-schedule-tab-all"
             aria-selected={selectedDay === ALL_DAYS_KEY}
             aria-controls="conv-schedule-panel"
-            className={`shrink-0 min-h-[3.25rem] rounded-xl px-3 py-2 text-left transition-[background-color,box-shadow,color,transform] motion-safe:duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent active:scale-[0.99] motion-reduce:active:scale-100 ${
+            className={`snap-start shrink-0 min-h-11 rounded-xl px-3 py-2 text-left transition-[background-color,box-shadow,color,transform] motion-safe:duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent active:scale-[0.99] motion-reduce:active:scale-100 ${
               selectedDay === ALL_DAYS_KEY ?
-                'bg-dc-accent/15 text-dc-accent ring-1 ring-dc-accent/25 shadow-sm'
-              : 'bg-white/[0.04] text-dc-text-muted hover:bg-white/[0.08] hover:text-dc-text hover:shadow-md motion-safe:hover:-translate-y-px motion-reduce:hover:translate-y-0'
+                'bg-dc-accent text-dc-accent-foreground shadow-sm'
+              : 'border border-dc-border bg-dc-elevated text-dc-text-muted hover:border-dc-accent/40 hover:text-dc-text'
             }`}
             onClick={() => setSelectedDay(ALL_DAYS_KEY)}
           >
-            <span className="block text-sm font-semibold leading-tight text-dc-text">All days</span>
-            <span className="mt-0.5 block text-[10px] font-normal text-dc-muted">
+            <span
+              className={`block text-sm font-semibold leading-tight ${
+                selectedDay === ALL_DAYS_KEY ? 'text-dc-accent-foreground' : 'text-dc-text'
+              }`}
+            >
+              All days
+            </span>
+            <span
+              className={`mt-0.5 block text-[10px] font-normal ${
+                selectedDay === ALL_DAYS_KEY ? 'text-dc-accent-foreground/80' : 'text-dc-muted'
+              }`}
+            >
               {slotsByDay.reduce((n, d) => n + d.items.length, 0)} sessions
             </span>
             <span className="sr-only">Full program, all days combined</span>
@@ -636,22 +667,32 @@ export default function ConventionScheduleAgenda({
                 aria-selected={selected}
                 aria-label={`${day}, ${items.length} session${items.length === 1 ? '' : 's'}`}
                 aria-controls={selected ? 'conv-schedule-panel' : undefined}
-                className={`shrink-0 min-h-[3.25rem] min-w-[4.75rem] rounded-xl px-3 py-2 text-left transition-[background-color,box-shadow,color,transform] motion-safe:duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent active:scale-[0.99] motion-reduce:active:scale-100 ${
+                className={`snap-start shrink-0 min-h-11 min-w-[4.75rem] rounded-xl px-3 py-2 text-left transition-[background-color,box-shadow,color,transform] motion-safe:duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dc-accent active:scale-[0.99] motion-reduce:active:scale-100 ${
                   selected ?
-                    'bg-dc-accent/15 text-dc-accent ring-1 ring-dc-accent/25 shadow-sm'
-                  : 'bg-white/[0.04] text-dc-text-muted hover:bg-white/[0.08] hover:text-dc-text hover:shadow-md motion-safe:hover:-translate-y-px motion-reduce:hover:translate-y-0'
+                    'bg-dc-accent text-dc-accent-foreground shadow-sm'
+                  : 'border border-dc-border bg-dc-elevated text-dc-text-muted hover:border-dc-accent/40 hover:text-dc-text'
                 }`}
                 onClick={() => setSelectedDay(day)}
               >
-                <span className="block text-sm font-semibold leading-tight text-dc-text">{short || 'Day'}</span>
-                <span className="mt-0.5 block text-[10px] font-normal text-dc-muted">
+                <span
+                  className={`block text-sm font-semibold leading-tight ${
+                    selected ? 'text-dc-accent-foreground' : 'text-dc-text'
+                  }`}
+                >
+                  {short || 'Day'}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[10px] font-normal ${
+                    selected ? 'text-dc-accent-foreground/80' : 'text-dc-muted'
+                  }`}
+                >
                   {items.length} session{items.length === 1 ? '' : 's'}
                 </span>
               </button>
             )
           })}
         </div>
-        <p className="mt-2 text-xs text-dc-muted">
+        <p className="mt-2 hidden text-xs text-dc-muted md:block">
           All session times are shown in <span className="text-dc-text-muted">{timezone}</span>.
         </p>
       </div>

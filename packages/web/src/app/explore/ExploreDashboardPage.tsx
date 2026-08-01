@@ -58,8 +58,14 @@ import { vendorsVendingSoon } from '@/lib/vendor-directory-utils'
 import DirectoryTemplate from '@/components/templates/DirectoryTemplate'
 import FilterSheet from '@/components/templates/FilterSheet'
 import { cn } from '@/lib/cn'
+import SiteNavLink from '@/components/SiteNavLink'
 
 const START_EXPLORING_LINKS = [
+  {
+    href: '/play',
+    label: 'Dancecard',
+    hint: 'Play spaces — share availability, compare schedules, reserve scenes.',
+  },
   { href: '/groups', label: 'Groups', hint: 'Join regional and interest communities.' },
   { href: '/orgs', label: 'Organizations', hint: 'Find hosts and educators near you.' },
   { href: '/education', label: 'Education', hint: 'Read guides and workshop paths.' },
@@ -331,13 +337,13 @@ export default function ExploreDashboardPage() {
         : <ul className="grid gap-2">
             {START_EXPLORING_LINKS.map((link) => (
               <li key={link.href}>
-                <Link
-                  to={link.href}
+                <SiteNavLink
+                  href={link.href}
                   className="xpl-teaser-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dc-accent"
                 >
                   <span className="text-sm font-semibold text-dc-text">{link.label}</span>
                   <span className="text-xs leading-relaxed text-dc-text-muted">{link.hint}</span>
-                </Link>
+                </SiteNavLink>
               </li>
             ))}
           </ul>

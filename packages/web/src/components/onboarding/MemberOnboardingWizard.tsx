@@ -4,13 +4,12 @@ import {
   clampOnboardingStep,
   ONBOARDING_FLOW_VERSION,
   ONBOARDING_STEP_COUNT,
-  safeInternalPath,
   type PrivacySettings,
 } from '@c2k/shared'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAppToast } from '@/components/ui/AppToast'
 import { useOnboardingState } from '@/hooks/useOnboardingState'
-import { buildLoginHref } from '@/lib/auth-links'
+import { buildLoginHref, coercePostAuthPath } from '@/lib/auth-links'
 import { orderOnboardingFirstSteps } from '@/lib/onboarding-first-steps'
 import type { ZipPlaceCandidate } from '@/lib/profile-edit-location'
 import {
@@ -60,7 +59,7 @@ const STEP_IDS = STEPS.map((s) => s.id)
 export default function MemberOnboardingWizard() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const redirect = safeInternalPath(searchParams.get('redirect') ?? undefined) ?? '/home'
+  const redirect = coercePostAuthPath(searchParams.get('redirect'))
   const { isAuthenticated, isFallback, viewerUsername, viewerDisplayName } = useAuth()
   const { loading, error, feed, privacy, setPrivacy, saving, save } = useOnboardingState(isAuthenticated && !isFallback)
   const toast = useAppToast()

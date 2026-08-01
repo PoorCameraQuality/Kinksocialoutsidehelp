@@ -98,3 +98,17 @@ k8s/base/secret.yaml
 .kink-social-audit.local
 .qa-audit-assets/
 deploy-log.txt
+
+# Agent / session tooling (never ship to outsidehelp)
+AGENTS.md
+.agents/
+.cursor/
+skills-lock.json
+scripts/_*.mjs
+scripts/_*.sh
+scripts/vps/_*.mjs
+packages/api/tmp/
+**/iso-card-review/
+docs/*PROMPT*
+docs/*BRIEF*
+docs/*AGENT*

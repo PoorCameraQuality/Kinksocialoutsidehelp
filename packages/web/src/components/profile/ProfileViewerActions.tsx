@@ -44,23 +44,9 @@ export default function ProfileViewerActions({
   const canShowMessage = canMessage || graphStatus?.canMessage === true
   const messageHintCopy = profileMessageHintCopy(graphStatus?.messageHint)
 
+  // Owner actions live on the hero (Edit profile / Manage photos) and owner notice — not pink CTAs here.
   if (isSelf) {
-    return (
-      <div className="flex flex-wrap gap-2">
-        <Link
-          to="/profile"
-          className="min-h-11 inline-flex items-center px-4 py-2 bg-dc-accent hover:bg-dc-accent-hover text-dc-accent-foreground text-sm font-medium rounded-xl"
-        >
-          Your dashboard
-        </Link>
-        <Link
-          to="/profile/edit"
-          className="min-h-11 inline-flex items-center px-4 py-2 bg-dc-elevated-solid hover:bg-dc-elevated-muted text-dc-text text-sm font-medium rounded-xl border border-dc-border"
-        >
-          Edit profile
-        </Link>
-      </div>
-    )
+    return null
   }
 
   return (

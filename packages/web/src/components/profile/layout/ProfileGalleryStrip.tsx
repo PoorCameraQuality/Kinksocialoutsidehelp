@@ -11,15 +11,16 @@ type Props = {
   viewer: MediaViewerContext
   totalCount: number
   onViewAll?: () => void
-  /** Owner shortcut — opens Profile Studio for photo edits. */
+  /** Owner shortcut — opens Photos Studio. */
   managePhotosHref?: string
   viewerIsOwner?: boolean
   className?: string
 }
 
-const PREVIEW_LIMIT = 6
+const PREVIEW_LIMIT = 5
 
-const TILE_CLASS = 'h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-dc-border sm:h-32 sm:w-32'
+const TILE_CLASS =
+  'h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-dc-border-subtle sm:h-28 sm:w-28'
 
 function isBlurred(photo: ProfileGalleryPhoto, viewer: MediaViewerContext): boolean {
   return shouldBlurMediaForViewer(viewer, {
@@ -31,9 +32,7 @@ function isBlurred(photo: ProfileGalleryPhoto, viewer: MediaViewerContext): bool
 }
 
 /**
- * Photo-forward gallery strip surfaced directly under the hero. A horizontal
- * row of recent photos with a trailing "View all" tile that opens the full
- * gallery. Hidden for visitors when there are no viewable photos.
+ * Gallery preview directly under the hero with a section header.
  */
 export default function ProfileGalleryStrip({
   photos,
@@ -45,113 +44,150 @@ export default function ProfileGalleryStrip({
   className,
 }: Props) {
   const withUrl = photos.filter((p) => p.url)
+  const manageHref = managePhotosHref ?? '/profile/edit/photos'
 
   if (withUrl.length === 0) {
     if (!viewerIsOwner) return null
     return (
-      <div className={className}>
+      <section className={className}>
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 className="text-sm font-semibold text-dc-text">Photos</h2>
+          <Link
+            to={manageHref}
+            className="text-sm font-medium text-dc-accent hover:underline"
+          >
+            Manage photos
+          </Link>
+        </div>
         <Link
-          to="/profile/edit"
-          onClick={onViewAll ? (e) => { e.preventDefault(); onViewAll() } : undefined}
+          to={manageHref}
           className={cn(
             TILE_CLASS,
             'flex flex-col items-center justify-center gap-1.5 border-dashed bg-dc-surface-muted text-dc-text-muted transition hover:border-dc-accent-border hover:text-dc-text',
           )}
         >
           <IconCamera className="h-5 w-5" />
-          <span className="text-xs font-medium">Add photos</span>
+          <span className="text-xs font-medium">Add photo</span>
         </Link>
-      </div>
+      </section>
     )
   }
 
   const preview = withUrl.slice(0, PREVIEW_LIMIT)
+  const overflow = Math.max(0, totalCount - preview.length)
   const tileLinkClass = cn(
     TILE_CLASS,
     'group relative bg-dc-elevated-solid focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dc-accent',
   )
 
   return (
-    <div
-      className={cn(
-        'flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-        className,
-      )}
-    >
-      {preview.map((photo) => {
-        const blur = isBlurred(photo, viewer)
-        const tileBody = (
-          <>
-            <ProfilePhotoImage
-              src={photo.url!}
-              alt={photo.caption ?? 'Profile photo'}
-              displaySettings={photo.displaySettings}
-              className={cn('h-full w-full transition', blur ? 'scale-110 blur-xl' : 'group-hover:scale-[1.03]')}
-            />
-            {blur ?
-              <span className="absolute inset-0 flex items-center justify-center bg-dc-surface-muted/55 text-[11px] font-medium text-dc-text">
-                Adult content
-              </span>
-            : null}
-          </>
-        )
-
-        if (managePhotosHref) {
-          return (
-            <Link
-              key={photo.id}
-              to={managePhotosHref}
-              className={tileLinkClass}
-              aria-label={blur ? 'Adult content — manage photos in Profile Studio' : 'Manage profile photos'}
-            >
-              {tileBody}
-            </Link>
-          )
-        }
-
-        return (
+    <section className={className}>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="text-sm font-semibold text-dc-text">
+          Photos
+          {totalCount > 0 ? <span className="ml-1.5 font-normal text-dc-text-muted">{totalCount}</span> : null}
+        </h2>
+        {viewerIsOwner && managePhotosHref ?
+          <Link to={managePhotosHref} className="text-sm font-medium text-dc-text-muted hover:text-dc-accent hover:underline">
+            Manage photos
+          </Link>
+        : onViewAll ?
           <button
-            key={photo.id}
             type="button"
             onClick={onViewAll}
-            className={tileLinkClass}
-            aria-label={blur ? 'Adult content — open gallery to view' : 'Open photo gallery'}
+            className="text-sm font-medium text-dc-text-muted hover:text-dc-accent hover:underline"
           >
-            {tileBody}
+            View all{totalCount > 0 ? ` ${totalCount}` : ''}
           </button>
-        )
-      })}
+        : null}
+      </div>
 
-      {managePhotosHref ?
-        <Link
-          to={managePhotosHref}
-          className={cn(
-            TILE_CLASS,
-            'flex flex-col items-center justify-center gap-1.5 border-dashed bg-dc-surface-muted text-dc-text-muted transition hover:border-dc-accent-border hover:text-dc-text focus:outline-none focus-visible:ring-2 focus-visible:ring-dc-accent',
-          )}
-          aria-label={`Manage profile photos${totalCount > 0 ? `, ${totalCount} total` : ''}`}
-        >
-          <IconCamera className="h-5 w-5" />
-          <span className="text-xs font-medium">
-            Manage photos{totalCount > preview.length ? ` (${totalCount})` : ''}
-          </span>
-        </Link>
-      : onViewAll ?
-        <button
-          type="button"
-          onClick={onViewAll}
-          className={cn(
-            TILE_CLASS,
-            'flex flex-col items-center justify-center gap-1.5 border-dashed bg-dc-surface-muted text-dc-text-muted transition hover:border-dc-accent-border hover:text-dc-text focus:outline-none focus-visible:ring-2 focus-visible:ring-dc-accent',
-          )}
-          aria-label={`View all photos${totalCount > 0 ? `, ${totalCount} total` : ''}`}
-        >
-          <IconCamera className="h-5 w-5" />
-          <span className="text-xs font-medium">
-            View all{totalCount > preview.length ? ` (${totalCount})` : ''}
-          </span>
-        </button>
-      : null}
-    </div>
+      <div
+        className={cn(
+          'flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-3',
+        )}
+      >
+        {preview.map((photo, index) => {
+          const blur = isBlurred(photo, viewer)
+          const isPrimary = index === 0 || photo.order === 0
+          const tileBody = (
+            <>
+              <ProfilePhotoImage
+                src={photo.url!}
+                alt={photo.caption ?? 'Profile photo'}
+                displaySettings={photo.displaySettings}
+                className={cn(
+                  'h-full w-full transition',
+                  blur ? 'scale-110 blur-xl' : 'group-hover:scale-[1.03]',
+                )}
+              />
+              {isPrimary ?
+                <span className="absolute left-1.5 top-1.5 rounded bg-dc-accent px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-dc-accent-foreground">
+                  Profile photo
+                </span>
+              : null}
+              {blur ?
+                <span className="absolute inset-0 flex items-center justify-center bg-dc-surface-muted/55 text-[11px] font-medium text-dc-text">
+                  Adult content
+                </span>
+              : null}
+            </>
+          )
+
+          if (viewerIsOwner && managePhotosHref) {
+            return (
+              <button
+                key={photo.id}
+                type="button"
+                onClick={onViewAll}
+                className={tileLinkClass}
+                aria-label={blur ? 'Adult content — open gallery' : 'Open photo'}
+              >
+                {tileBody}
+              </button>
+            )
+          }
+
+          return (
+            <button
+              key={photo.id}
+              type="button"
+              onClick={onViewAll}
+              className={tileLinkClass}
+              aria-label={blur ? 'Adult content — open gallery to view' : 'Open photo gallery'}
+            >
+              {tileBody}
+            </button>
+          )
+        })}
+
+        {viewerIsOwner && managePhotosHref ?
+          <Link
+            to={managePhotosHref}
+            className={cn(
+              TILE_CLASS,
+              'flex flex-col items-center justify-center gap-1.5 border-dashed bg-dc-surface-muted text-dc-text-muted transition hover:border-dc-accent-border hover:text-dc-text focus:outline-none focus-visible:ring-2 focus-visible:ring-dc-accent',
+            )}
+            aria-label="Add profile photo"
+          >
+            <IconCamera className="h-5 w-5" />
+            <span className="text-xs font-medium">Add photo</span>
+          </Link>
+        : overflow > 0 && onViewAll ?
+          <button
+            type="button"
+            onClick={onViewAll}
+            className={cn(
+              TILE_CLASS,
+              'flex flex-col items-center justify-center gap-1 border-dashed bg-dc-surface-muted text-dc-text-muted transition hover:border-dc-accent-border hover:text-dc-text',
+            )}
+            aria-label={`View ${overflow} more photos`}
+          >
+            <span className="text-lg font-semibold text-dc-text">+{overflow}</span>
+            <span className="text-[11px]">more</span>
+          </button>
+        : null}
+      </div>
+    </section>
   )
 }

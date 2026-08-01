@@ -138,9 +138,10 @@ export function enrichAppearanceVars(
   const background = vars['--dc-surface'] ?? (mode === 'light' ? '#f4f0e8' : '#090a0f')
   const card = vars['--dc-elevated-solid'] ?? vars['--dc-surface-muted'] ?? '#1e1e1e'
   const primary = vars['--dc-accent'] ?? '#e6638e'
+  // Preset-provided atmosphere tokens win (e.g. Black Velvet / Velvet Rose).
   return {
-    ...vars,
     ...buildAtmosphereVars({ mode, background, card, primary }),
+    ...vars,
   }
 }
 

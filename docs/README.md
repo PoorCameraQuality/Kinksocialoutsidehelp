@@ -1,4 +1,4 @@
-﻿# Docs
+# Docs
 
 Notes I keep around for myself and anyone helping with the code. They're uneven. If something in here disagrees with the code, trust the code.
 
@@ -23,6 +23,7 @@ Start with the root [README.md](../README.md).
 | [FEATURE_REGISTRY.md](./FEATURE_REGISTRY.md) | Big feature / route list |
 | [ENGINEERING_REVIEW_CHECKLIST.md](./ENGINEERING_REVIEW_CHECKLIST.md) | Loose review checklist |
 | [REMOVED_FILES_SUMMARY.md](./REMOVED_FILES_SUMMARY.md) | What I left out of this repo |
+| [PATCH_NOTES_2026-08-01.md](./PATCH_NOTES_2026-08-01.md) | What shipped ~27 Jul to 1 Aug 2026 |
 
 Also:
 

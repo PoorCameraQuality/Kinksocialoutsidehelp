@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PlaceholderAvatar from '@/components/PlaceholderAvatar'
+import IsoBoardCardSummary from '@/components/profile/IsoBoardCardSummary'
 import CommunityTrustChip from '@/components/trust/CommunityTrustChip'
 
 type IsoRow = {
@@ -9,6 +10,7 @@ type IsoRow = {
   displayName: string | null
   avatarUrl: string | null
   body: string
+  structured?: unknown
   staffRemoved?: boolean
 }
 
@@ -67,7 +69,7 @@ export default function ConventionAttendeeIsoMiniPanel({
                 <CommunityTrustChip username={entry.username} />
               </div>
             </div>
-            <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm text-dc-text-muted">{entry.body}</p>
+            <IsoBoardCardSummary body={entry.body} structured={entry.structured} />
           </li>
         ))}
       </ul>

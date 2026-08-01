@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import SiteWordmark from '@/components/brand/SiteWordmark'
+import { isDancecardHost } from '@/lib/dancecard-host'
 
 type Props = {
   minimal?: boolean
@@ -14,11 +15,13 @@ const anchorLinks = [
 ] as const
 
 export default function PublicNav({ minimal = false, loginFocus = false }: Props) {
+  const brandHref = loginFocus ? '/login' : isDancecardHost() ? '/play' : '/'
+
   if (loginFocus) {
     return (
       <nav className="beta-nav" aria-label="Site">
         <div className="public-container beta-nav__inner">
-          <Link to="/" className="public-nav__brand" aria-label="Kink Social home">
+          <Link to={brandHref} className="public-nav__brand" aria-label="Kink Social home">
             <SiteWordmark className="text-xl font-semibold tracking-tight text-[var(--beta-text)]" />
           </Link>
         </div>
@@ -29,7 +32,7 @@ export default function PublicNav({ minimal = false, loginFocus = false }: Props
   return (
     <nav className="beta-nav" aria-label="Site">
       <div className="public-container beta-nav__inner">
-        <Link to="/" className="public-nav__brand" aria-label="Kink Social home">
+        <Link to={brandHref} className="public-nav__brand" aria-label="Kink Social home">
           <SiteWordmark className="text-xl font-semibold tracking-tight text-[var(--beta-text)]" />
         </Link>
         {!minimal ?
@@ -42,7 +45,7 @@ export default function PublicNav({ minimal = false, loginFocus = false }: Props
           </div>
         : null}
         <div className="beta-nav__actions">
-          <Link to="/?login=1" className="beta-btn beta-btn--secondary beta-nav__signin-desktop">
+          <Link to="/login" className="beta-btn beta-btn--secondary beta-nav__signin-desktop">
             Sign in
           </Link>
           <a href="#join" className="beta-btn beta-btn--primary">

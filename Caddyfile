@@ -65,3 +65,37 @@ webmail.{$DOMAIN:localhost} {
 
     reverse_proxy roundcube:80
 }
+
+# Play Spaces / Dancecard product surface (same SPA + API as apex).
+# Requires COOKIE_DOMAIN=.{$DOMAIN} and CORS_ORIGIN including https://dancecard.{$DOMAIN}
+# so c2k_session works across subdomains.
+dancecard.{$DOMAIN:localhost} {
+    encode gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    handle /api/* {
+        reverse_proxy api:3001
+    }
+
+    # ISO share OG shells (same API handlers as apex).
+    handle /share/* {
+        reverse_proxy api:3001
+    }
+
+    # Social crawlers do not run SPA JS — serve static OG shell with Public Dancecard art.
+    @socialbot header_regexp User-Agent (?i)(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|TelegramBot|redditbot|Pinterest|Applebot)
+    handle @socialbot {
+        rewrite * /dancecard-og.html
+        reverse_proxy web:80
+    }
+
+    handle {
+        reverse_proxy web:80
+    }
+}
