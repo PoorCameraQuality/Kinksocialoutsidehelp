@@ -1,6 +1,6 @@
 # Local development
 
-How I run this on my machine. If something here is wrong, the compose file and `.env.development` win.
+How I run this on my machine. If something here is wrong, the compose file and your local env win.
 
 ## What you need
 
@@ -18,8 +18,8 @@ Usual local services:
 
 | Service | Where |
 |---------|-------|
-| Postgres | `127.0.0.1:6432` (see compose / `.env.development`) |
-| Redis | From `REDIS_URL` in `.env.development` |
+| Postgres | `127.0.0.1:6432` (see compose / `.env.development.example`) |
+| Redis | From `REDIS_URL` in the local env template |
 | MinIO | Local S3 |
 | Mailpit | Caught mail UI, usually `http://127.0.0.1:8025` |
 
@@ -40,16 +40,25 @@ npm run db:seed:locations -w @c2k/api
 
 ## Env files
 
-`.env.development` has the local defaults. Don't commit real prod secrets.
+Tracked templates only (no live API keys / cloud secrets in git):
+
+- `.env.development.example` — public local Docker defaults (match `docker-compose.dev.yml`)
+- `.env.example` / `.env.production.example` — empty or `CHANGE_ME` placeholders
+
+Copy for local work (gitignored):
+
+```bash
+cp .env.development.example .env.development
+```
+
+Never put real Stripe, S3, Supabase, Resend, or `AUTH_SECRET` values in tracked files. Use `.env.development.local` or `.env.local` for private overrides.
 
 Mail locally:
 
 ```bash
 C2K_MAIL_TRANSPORT=smtp
-# SMTP points at Mailpit — see .env.development
+# SMTP points at Mailpit — see .env.development.example
 ```
-
-`.env.example` is a short template. Day to day I just use `.env.development`.
 
 ## Run it
 

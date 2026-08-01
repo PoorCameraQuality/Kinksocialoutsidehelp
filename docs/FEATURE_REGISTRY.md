@@ -33,7 +33,7 @@ When you ship, migrate, or audit: work through each section and verify nothing w
 | ---------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
 | `packages/web/src/config/site.config.ts` | Name, tagline, logo, **`navPublic` / `navPrimary` / `navMore` / `navSecondary`**, **`bottomNav`**, **`footer.directory`** + **`footer.community`** | **Public brand: Kink Social** (kink.social). **`Header`** (mobile + logged-out explore) and **`Footer`** / **`BottomNav`** read from here; active-state helper: `packages/web/src/lib/nav-link-active.ts` |
 | `packages/web/src/app/globals.css`       | `--c2k-*` tokens, `--c2k-danger`, `--c2k-success`, `--c2k-warning`   | Design tokens                                          |
-| `.env.development`                       | `DATABASE_URL`, `REDIS_URL`, `S3_*`, `VITE_API_URL`, `VITE_SITE_URL` | Committed defaults                                     |
+| `.env.development.example`               | `DATABASE_URL`, `REDIS_URL`, `S3_*`, `VITE_API_URL`, `VITE_SITE_URL` | Public local Docker template (copy to gitignored `.env.development`) |
 | `.env.production` (VPS only)             | Real secrets, domain, DB                                             | Never committed                                        |
 | `packages/api/data/places-seed.json`     | Census-derived places                                                | Regenerate via `npm run build:places-data -w @c2k/api` |
 

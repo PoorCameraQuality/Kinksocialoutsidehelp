@@ -30,16 +30,20 @@ _api-logs.txt
 _migrate-log.txt
 build-web.log
 
-# Env (templates tracked; secrets never)
+# Env — track templates only. Never commit live secrets / API keys.
 .env
-.env.local
-.env.production
-.env.development.local
-.env.test.local
-.env.production.local
-!.env.development
+.env.*
 !.env.example
 !.env.production.example
+!.env.development.example
+# Belt-and-suspenders for common secret filenames
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+**/credentials.json
+**/service-account*.json
 
 # IDE
 .idea

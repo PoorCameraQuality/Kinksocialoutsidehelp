@@ -4,9 +4,13 @@ const { existsSync } = require('node:fs')
 const { resolve, dirname } = require('node:path')
 const { defineConfig } = require('drizzle-kit')
 
-const rootEnv = resolve(__dirname, '../../.env.development')
+const root = resolve(__dirname, '../..')
+const rootEnv = resolve(root, '.env.development')
+const rootExample = resolve(root, '.env.development.example')
 if (existsSync(rootEnv)) {
   loadEnv({ path: rootEnv })
+} else if (existsSync(rootExample)) {
+  loadEnv({ path: rootExample })
 }
 
 const defaultUrl = 'postgresql://c2k:c2k_dev@127.0.0.1:6432/c2k_dev?sslmode=disable'

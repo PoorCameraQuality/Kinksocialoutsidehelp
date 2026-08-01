@@ -8,7 +8,7 @@
 | `db:prepare` fails | Postgres not ready or wrong URL | Check compose port and `DATABASE_URL` |
 | Demo login fails | Seed missing or password mismatch | Re-run `db:prepare`, check `DEMO_LOGIN_PASSWORD` |
 | No mail in local tests | Mailpit down or wrong SMTP | Start compose, open Mailpit UI, check mail env |
-| Upload errors | MinIO/S3 env missing | Check S3 settings in `.env.development` |
+| Upload errors | MinIO/S3 env missing | Check S3 settings in `.env.development` / `.env.development.example` |
 | Unit tests odd on Node 24 | Unsupported Node for current toolchain | Use Node 20 |
 
 ## Production

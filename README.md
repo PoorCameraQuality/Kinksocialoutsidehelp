@@ -56,7 +56,7 @@ npm run dev
 | http://localhost:3001/api/health/ready | API readiness |
 | http://127.0.0.1:8025 | Mailpit UI (local mail capture) |
 
-Demo login after seed: username `RopeDreamer`, password from `DEMO_LOGIN_PASSWORD` in `.env.development` (default `demo`).
+Demo login after seed: username `RopeDreamer`, password from `DEMO_LOGIN_PASSWORD` in your local env (default `demo`). Real API keys and cloud secrets are never committed — see `.env.development.example` / `.env.production.example`.
 
 See [Local development](docs/LOCAL_DEVELOPMENT.md).
 

@@ -1,6 +1,6 @@
 # Environment variables
 
-This is a practical reference for active services. Names come from `.env.production.example`, `.env.development`, and code usage. Never put real secrets in tracked files.
+This is a practical reference for active services. Names come from `.env.production.example`, `.env.development.example`, and code usage. Never put real secrets or API keys in tracked files.
 
 For each variable:
 

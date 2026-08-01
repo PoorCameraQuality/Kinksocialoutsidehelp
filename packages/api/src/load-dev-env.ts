@@ -5,10 +5,23 @@ import { fileURLToPath } from 'node:url'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 
-// Tracked templates first; gitignored *.local overrides (secrets never in .env.development).
-for (const file of ['.env.development', '.env.development.local', '.env.local'] as const) {
+/**
+ * Load order:
+ * 1. `.env.development` (gitignored local copy)
+ * 2. else `.env.development.example` (tracked public local Docker defaults)
+ * then gitignored overrides (secrets belong only in *.local).
+ */
+const primary = resolve(repoRoot, '.env.development')
+const example = resolve(repoRoot, '.env.development.example')
+if (existsSync(primary)) {
+  loadEnv({ path: primary })
+} else if (existsSync(example)) {
+  loadEnv({ path: example })
+}
+
+for (const file of ['.env.development.local', '.env.local'] as const) {
   const path = resolve(repoRoot, file)
   if (existsSync(path)) {
-    loadEnv({ path, override: file !== '.env.development' })
+    loadEnv({ path, override: true })
   }
 }
